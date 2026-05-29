@@ -11,7 +11,6 @@ use App\Models\Customer;
 use App\Models\Journal;
 use App\Models\JournalEntry;
 use App\Models\PaymentMethod;
-use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\Receivable;
 use App\Models\Sale;
@@ -57,6 +56,7 @@ class SaleController extends Controller
             'tax_id' => 'nullable|exists:taxes,id',
             'paid_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
+            'total_discount' => 'nullable|numeric|min:0',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|numeric|min:0.01',
@@ -79,8 +79,8 @@ class SaleController extends Controller
                 $taxRate = Tax::find($validated['tax_id'])?->rate ?? 0;
                 $tax = round(($subtotal - $itemDiscount) * $taxRate / 100);
             }
-            $totalDiscount = 0;
-            $total = $subtotal + $tax - $totalDiscount;
+            $totalDiscount = $validated['total_discount'] ?? 0;
+            $total = max(0, $subtotal + $tax - $totalDiscount);
             $paidAmount = $validated['paid_amount'] ?? $total;
             $change = max(0, $paidAmount - $total);
 
@@ -242,6 +242,15 @@ class SaleController extends Controller
                     default => '<span class="badge bg-secondary">Batal</span>',
                 };
 
+                $actions = '';
+                if (auth()->user()->can('view_sale')) {
+                    $actions .= '<div class="flex gap-1">'
+                        .'<a href="'.route('pos.print-a4', $item).'" target="_blank" class="btn btn-sm btn-outline-primary" title="Cetak A4"><i class="bi bi-printer"></i></a>'
+                        .'<a href="'.route('pos.print-thermal', $item).'" target="_blank" class="btn btn-sm btn-outline-secondary" title="Cetak Thermal"><i class="bi bi-receipt"></i></a>'
+                        .'<button type="button" class="btn btn-sm btn-outline-info btn-detail" data-id="'.$item->id.'" title="Detail"><i class="bi bi-eye"></i></button>'
+                        .'</div>';
+                }
+
                 return [
                     $item->invoice_number,
                     $item->customer?->name ?? $item->customer_name ?? 'Umum',
@@ -249,6 +258,7 @@ class SaleController extends Controller
                     $item->paymentMethod?->name ?? '-',
                     formatRupiah($item->total),
                     $statusBadge,
+                    $actions,
                 ];
             });
 
@@ -258,5 +268,64 @@ class SaleController extends Controller
         $paymentMethods = PaymentMethod::active()->where('is_available_pos', true)->get();
 
         return view('pages.transaksi.pos.riwayat', compact('paymentMethods'));
+    }
+
+    public function riwayatDetail(Sale $sale)
+    {
+        $sale->load(['items.product', 'paymentMethod', 'customer']);
+
+        $statusBadge = match ($sale->status) {
+            'paid' => '<span class="badge bg-success">Lunas</span>',
+            'partial' => '<span class="badge bg-warning">Sebagian</span>',
+            'unpaid' => '<span class="badge bg-danger">Belum Bayar</span>',
+            default => '<span class="badge bg-secondary">Batal</span>',
+        };
+
+        return response()->json([
+            'data' => [
+                'invoice' => $sale->invoice_number,
+                'customer' => $sale->customer?->name ?? $sale->customer_name ?? 'Umum',
+                'date' => $sale->sale_date->format('d/m/Y H:i'),
+                'method' => $sale->paymentMethod?->name ?? '-',
+                'status' => $sale->status,
+                'status_badge' => $statusBadge,
+                'subtotal' => formatRupiah($sale->subtotal),
+                'discount' => formatRupiah($sale->item_discount + $sale->total_discount),
+                'tax' => formatRupiah($sale->tax),
+                'total' => formatRupiah($sale->total),
+                'paid' => formatRupiah($sale->paid_amount),
+                'notes' => $sale->notes,
+                'items' => $sale->items->map(fn ($i) => [
+                    'name' => $i->product?->name ?? '-',
+                    'qty' => $i->quantity,
+                    'price' => formatRupiah($i->unit_price),
+                    'disc' => formatRupiah($i->discount),
+                    'total' => formatRupiah($i->total),
+                ]),
+            ],
+        ]);
+    }
+
+    public function recentSales()
+    {
+        $sales = Sale::with(['paymentMethod', 'customer'])
+            ->latest()
+            ->take(20)
+            ->get()
+            ->map(function ($sale) {
+                return [
+                    'id' => $sale->id,
+                    'invoice' => $sale->invoice_number,
+                    'customer' => $sale->customer?->name ?? $sale->customer_name ?? 'Umum',
+                    'date' => $sale->sale_date->format('d/m/Y H:i'),
+                    'method' => $sale->paymentMethod?->name ?? '-',
+                    'total' => formatRupiah($sale->total),
+                    'status' => $sale->status,
+                    'print_a4' => route('pos.print-a4', $sale),
+                    'print_thermal' => route('pos.print-thermal', $sale),
+                ];
+            });
+
+        return response()->json($sales);
     }
 }

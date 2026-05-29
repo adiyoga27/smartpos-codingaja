@@ -46,7 +46,7 @@
     </div>
 </div>
 <script>
-    let sales = @json($sales->map(fn($s) => ['id'=>$s->id, 'items'=>$s->items->map(fn($i)=>['product_id'=>$i->product_id,'product_name'=>$i->product?->name ?? '-','unit_price'=>$i->unit_price])]));
+    let sales = {!! $salesJson !!};
     function formatRupiah(angka) { return 'Rp ' + parseFloat(angka).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
     function updateGrand() {
         let total = 0;

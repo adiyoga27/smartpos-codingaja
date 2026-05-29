@@ -51,11 +51,25 @@ class SaleReturnController extends Controller
 
     public function create()
     {
-        $sales = Sale::with('items.product')->where('status', '!=', 'cancelled')->get();
+        $sales = Sale::with(['items.product', 'customer'])->where('status', '!=', 'cancelled')->get();
+        $salesJson = $sales->map(function ($s) {
+            return [
+                'id' => $s->id,
+                'invoice' => $s->invoice_number,
+                'customer' => $s->customer?->name ?? 'Umum',
+                'items' => $s->items->map(function ($i) {
+                    return [
+                        'product_id' => $i->product_id,
+                        'product_name' => $i->product?->name ?? '-',
+                        'unit_price' => $i->unit_price,
+                    ];
+                }),
+            ];
+        })->values()->toJson();
         $prefix = CompanySetting::first()->doc_prefix_return_out ?? 'RJ';
         $documentNumber = $prefix.'-'.now()->format('Ymd').'-'.str_pad((SaleReturn::withTrashed()->count() + 1), 4, '0', STR_PAD_LEFT);
 
-        return view('pages.transaksi.sale_returns.create', compact('sales', 'documentNumber'));
+        return view('pages.transaksi.sale_returns.create', compact('sales', 'salesJson', 'documentNumber'));
     }
 
     public function store(Request $request)
