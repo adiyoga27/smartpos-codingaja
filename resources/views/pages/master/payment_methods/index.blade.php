@@ -15,7 +15,7 @@
         <div class="overflow-x-auto">
             <table class="table table-striped" id="payment-methods-table" style="width:100%">
                 <thead>
-                    <tr><th>Kode</th><th>Nama</th><th>Akun Terkait</th><th>Efek Akun</th><th>Jenis</th><th>POS</th><th>Pembelian</th><th>Status</th><th>Aksi</th></tr>
+                    <tr><th>Kode</th><th>Nama</th><th>Akun Terkait</th><th>Jenis</th><th>POS</th><th>Pembelian</th><th>Status</th><th>Aksi</th></tr>
                 </thead>
             </table>
         </div>
@@ -42,7 +42,7 @@ $(document).ready(function() {
             url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json'
         },
         columnDefs: [
-            { orderable: false, targets: [7, 8] }
+            { orderable: false, targets: [6, 7] }
         ]
     });
 });

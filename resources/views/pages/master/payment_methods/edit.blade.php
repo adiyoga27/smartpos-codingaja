@@ -22,12 +22,6 @@
                         @endforeach
                     </select>
                 </div>
-                <div><label class="form-label">Efek Pada Akun</label>
-                    <select name="effect" class="form-select" required>
-                        <option value="add" {{ old('effect', $paymentMethod->effect) == 'add' ? 'selected' : '' }}>+ Menambah Saldo Akun</option>
-                        <option value="subtract" {{ old('effect', $paymentMethod->effect) == 'subtract' ? 'selected' : '' }}>- Mengurangi Saldo Akun</option>
-                    </select>
-                </div>
                 <div class="md:col-span-2"><label class="form-label">Deskripsi</label><textarea name="description" class="form-input" rows="3">{{ old('description', $paymentMethod->description) }}</textarea></div>
                 <div><label class="form-check"><input type="hidden" name="is_available_pos" value="0"><input type="checkbox" name="is_available_pos" value="1" class="form-check-input" {{ old('is_available_pos', $paymentMethod->is_available_pos) ? 'checked' : '' }}> Tersedia di POS</label></div>
                 <div><label class="form-check"><input type="hidden" name="is_available_purchase" value="0"><input type="checkbox" name="is_available_purchase" value="1" class="form-check-input" {{ old('is_available_purchase', $paymentMethod->is_available_purchase) ? 'checked' : '' }}> Tersedia di Pembelian</label></div>

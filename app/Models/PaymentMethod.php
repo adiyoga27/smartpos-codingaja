@@ -11,7 +11,7 @@ class PaymentMethod extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'code', 'name', 'account_id', 'effect', 'is_available_pos',
+        'code', 'name', 'account_id', 'is_available_pos',
         'is_available_purchase', 'is_credit', 'description', 'is_active',
     ];
 

@@ -26,9 +26,9 @@ class PaymentMethodController extends Controller
             }
             $filtered = $query->count();
             $data = $query->skip($start)->take($length)->get()->map(function ($item) {
-                $effectBadge = $item->effect === 'add'
-                    ? '<span class="badge bg-success">+ Menambah</span>'
-                    : '<span class="badge bg-danger">- Mengurangi</span>';
+                $creditBadge = $item->is_credit
+                    ? '<span class="badge bg-danger">Kredit</span>'
+                    : '<span class="badge bg-info">Tunai</span>';
 
                 $posBadge = $item->is_available_pos
                     ? '<span class="badge bg-primary">Ya</span>'
@@ -38,15 +38,10 @@ class PaymentMethodController extends Controller
                     ? '<span class="badge bg-warning">Ya</span>'
                     : '<span class="badge bg-secondary">Tidak</span>';
 
-                $creditBadge = $item->is_credit
-                    ? '<span class="badge bg-danger">Kredit</span>'
-                    : '<span class="badge bg-info">Tunai</span>';
-
                 return [
                     $item->code,
                     $item->name,
                     $item->account?->name ?? '-',
-                    $effectBadge,
                     $creditBadge,
                     $posBadge,
                     $purchaseBadge,
@@ -75,7 +70,6 @@ class PaymentMethodController extends Controller
             'code' => 'required|string|max:50|unique:payment_methods',
             'name' => 'required|string|max:255',
             'account_id' => 'nullable|exists:accounts,id',
-            'effect' => 'required|in:add,subtract',
             'description' => 'nullable|string',
         ]);
         $validated['is_active'] = $request->boolean('is_active', true);
@@ -100,7 +94,6 @@ class PaymentMethodController extends Controller
             'code' => 'required|string|max:50|unique:payment_methods,code,'.$paymentMethod->id,
             'name' => 'required|string|max:255',
             'account_id' => 'nullable|exists:accounts,id',
-            'effect' => 'required|in:add,subtract',
             'description' => 'nullable|string',
         ]);
         $validated['is_active'] = $request->boolean('is_active', true);
