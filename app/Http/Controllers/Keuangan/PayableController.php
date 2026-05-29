@@ -1,0 +1,117 @@
+<?php
+
+namespace App\Http\Controllers\Keuangan;
+
+use App\Http\Controllers\Controller;
+use App\Models\Account;
+use App\Models\CashAccount;
+use App\Models\Journal;
+use App\Models\JournalEntry;
+use App\Models\Payable;
+use App\Models\PayablePayment;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class PayableController extends Controller
+{
+    public function index(Request $request)
+    {
+        if ($request->ajax()) {
+            $query = Payable::with('supplier', 'purchase')->latest();
+            $draw = (int) $request->input('draw', 1);
+            $start = (int) $request->input('start', 0);
+            $length = (int) $request->input('length', 25);
+            $search = $request->input('search.value', '');
+
+            $total = $query->count();
+            if ($search) {
+                $query->where('document_number', 'like', '%'.$search.'%');
+            }
+            $filtered = $query->count();
+            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+                $statusBadge = match ($item->status) {
+                    'open' => '<span class="badge bg-secondary">Belum</span>',
+                    'partial' => '<span class="badge bg-warning">Sebagian</span>',
+                    'paid' => '<span class="badge bg-success">Lunas</span>',
+                    default => '<span class="badge bg-danger">Jatuh Tempo</span>',
+                };
+                $actions = '';
+                if ($item->remaining_amount > 0) {
+                    $actions = '<a href="'.route('keuangan.payables.pay', $item).'" class="btn btn-sm btn-primary"><i class="bi bi-cash"></i> Bayar</a>';
+                }
+
+                return [
+                    $item->document_number,
+                    $item->supplier?->name ?? '-',
+                    $item->due_date?->format('d/m/Y') ?? '-',
+                    formatRupiah($item->amount),
+                    formatRupiah($item->paid_amount),
+                    formatRupiah($item->remaining_amount),
+                    $statusBadge,
+                    $actions,
+                ];
+            });
+
+            return response()->json(['draw' => $draw, 'recordsTotal' => $total, 'recordsFiltered' => $filtered, 'data' => $data]);
+        }
+
+        return view('pages.keuangan.payables.index');
+    }
+
+    public function payForm(Payable $payable)
+    {
+        $cashAccounts = CashAccount::active()->get();
+
+        return view('pages.keuangan.payables.pay', compact('payable', 'cashAccounts'));
+    }
+
+    public function payStore(Request $request, Payable $payable)
+    {
+        $validated = $request->validate([
+            'cash_account_id' => 'required|exists:cash_accounts,id',
+            'payment_date' => 'required|date',
+            'amount' => 'required|numeric|min:0.01|max:'.$payable->remaining_amount,
+            'notes' => 'nullable|string',
+        ]);
+
+        DB::transaction(function () use ($validated, $payable) {
+            PayablePayment::create([
+                'payable_id' => $payable->id,
+                'supplier_id' => $payable->supplier_id,
+                'cash_account_id' => $validated['cash_account_id'],
+                'payment_date' => $validated['payment_date'],
+                'amount' => $validated['amount'],
+                'notes' => $validated['notes'] ?? null,
+                'created_by' => auth()->id(),
+            ]);
+            $payable->paid_amount += $validated['amount'];
+            $payable->remaining_amount = max(0, $payable->amount - $payable->paid_amount);
+            $payable->status = $payable->remaining_amount <= 0 ? 'paid' : 'partial';
+            $payable->save();
+
+            $cash = CashAccount::find($validated['cash_account_id']);
+            $cash->current_balance -= $validated['amount'];
+            $cash->save();
+
+            $hutang = Account::where('code', '2-1000')->first();
+            $kas = Account::where('code', '1-1000')->first();
+            if ($hutang && $kas) {
+                $journal = Journal::create([
+                    'journal_number' => 'JUR-'.now()->format('Ymd').'-'.str_pad((Journal::count() + 1), 4, '0', STR_PAD_LEFT),
+                    'journal_date' => now(),
+                    'description' => 'Pembayaran hutang '.$payable->document_number,
+                    'source' => 'payment',
+                    'reference_id' => $payable->id,
+                    'reference_type' => Payable::class,
+                    'total_debit' => $validated['amount'],
+                    'total_credit' => $validated['amount'],
+                    'created_by' => auth()->id(),
+                ]);
+                JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $hutang->id, 'debit' => $validated['amount'], 'credit' => 0]);
+                JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $kas->id, 'debit' => 0, 'credit' => $validated['amount']]);
+            }
+        });
+
+        return redirect()->route('keuangan.payables.index')->with('success', 'Pembayaran berhasil dicatat.');
+    }
+}

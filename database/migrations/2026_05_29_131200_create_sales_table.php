@@ -1,0 +1,38 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('sales', function (Blueprint $table) {
+            $table->id();
+            $table->string('invoice_number', 50)->unique();
+            $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
+            $table->string('customer_name')->nullable();
+            $table->date('sale_date');
+            $table->date('due_date')->nullable();
+            $table->enum('payment_method', ['cash', 'transfer', 'credit'])->default('cash');
+            $table->enum('status', ['paid', 'partial', 'unpaid', 'cancelled'])->default('paid');
+            $table->decimal('subtotal', 15, 2)->default(0);
+            $table->decimal('item_discount', 15, 2)->default(0);
+            $table->decimal('total_discount', 15, 2)->default(0);
+            $table->decimal('tax', 15, 2)->default(0);
+            $table->decimal('total', 15, 2)->default(0);
+            $table->decimal('paid_amount', 15, 2)->default(0);
+            $table->decimal('change_amount', 15, 2)->default(0);
+            $table->text('notes')->nullable();
+            $table->foreignId('created_by')->constrained('users');
+            $table->timestamps();
+            $table->softDeletes();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('sales');
+    }
+};
