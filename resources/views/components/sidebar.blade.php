@@ -79,6 +79,9 @@
                     @can('view_account')
                     <a href="{{ route('master.accounts.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('master.accounts.*') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">Akun Biaya</a>
                     @endcan
+                    @can('view_payment_method')
+                    <a href="{{ route('master.payment_methods.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('master.payment_methods.*') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">Metode Pembayaran</a>
+                    @endcan
                     <a href="{{ route('master.taxes.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('master.taxes.*') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">Pajak</a>
                 </div>
             </div>

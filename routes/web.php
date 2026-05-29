@@ -11,6 +11,7 @@ use App\Http\Controllers\Keuangan\ReceivableController;
 use App\Http\Controllers\Master\AccountController;
 use App\Http\Controllers\Master\CategoryController;
 use App\Http\Controllers\Master\CustomerController;
+use App\Http\Controllers\Master\PaymentMethodController;
 use App\Http\Controllers\Master\ProductController;
 use App\Http\Controllers\Master\SupplierController;
 use App\Http\Controllers\Master\TaxController;
@@ -40,6 +41,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('customers', CustomerController::class);
         Route::resource('accounts', AccountController::class);
         Route::resource('taxes', TaxController::class);
+        Route::resource('payment_methods', PaymentMethodController::class);
     });
 
     // Transaksi

@@ -174,11 +174,11 @@
                                 <option value="credit">Kredit (Hutang)</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Akun Kas/Bank</label>
+                        <div id="bankPanel" style="display:none;">
+                            <label class="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Akun Bank</label>
                             <select name="cash_account_id" class="form-select text-sm" id="cashAccountSelect">
-                                @foreach($cashAccounts->where('type', 'cash') as $acc)
-                                <option value="{{ $acc->id }}" data-type="cash" {{ isset($defaultCashAccount) && $acc->id === $defaultCashAccount->id ? 'selected' : '' }}>{{ $acc->name }}</option>
+                                @foreach($cashAccounts->where('type', 'bank') as $acc)
+                                <option value="{{ $acc->id }}">{{ $acc->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -430,34 +430,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let pm = document.getElementById('paymentMethod');
-    let cs = document.getElementById('cashAccountSelect');
-    if (pm && cs) {
-        let bankOptions = @json($cashAccounts->map(function($a) { return ['id' => $a->id, 'name' => $a->name, 'type' => $a->type, 'is_default' => $a->is_default]; })->values());
-        let defaultCashId = @json($defaultCashAccount?->id);
-        let defaultBankOpt = bankOptions.filter(a => a.type === 'bank');
-
-        function updateAccountOptions(type) {
-            cs.innerHTML = '';
-            if (type === 'cash') {
-                bankOptions.filter(a => a.type === 'cash').forEach(a => {
-                    cs.innerHTML += `<option value="${a.id}" ${a.id === defaultCashId ? 'selected' : ''}>${a.name}</option>`;
-                });
-            } else if (type === 'transfer') {
-                cs.innerHTML += '<option value="">- Pilih Bank -</option>';
-                defaultBankOpt.forEach(a => {
-                    cs.innerHTML += `<option value="${a.id}">${a.name}</option>`;
-                });
-            } else {
-                cs.innerHTML = '<option value="">- Otomatis -</option>';
-            }
-        }
-
+    if (pm) {
         pm.addEventListener('change', function() {
             let cash = document.getElementById('cashPanel');
             let cashTotal = document.getElementById('cashPanelTotal');
+            let bankPanel = document.getElementById('bankPanel');
             if (cash) cash.style.display = this.value === 'cash' ? '' : 'none';
             if (cashTotal) cashTotal.style.display = this.value === 'cash' ? '' : 'none';
-            updateAccountOptions(this.value);
+            if (bankPanel) bankPanel.style.display = this.value === 'transfer' ? '' : 'none';
         });
         pm.dispatchEvent(new Event('change'));
     }

@@ -17,6 +17,7 @@ class RolePermissionSeeder extends Seeder
             'supplier',
             'customer',
             'account',
+            'payment_method',
             'purchase',
             'purchase_return',
             'sale',

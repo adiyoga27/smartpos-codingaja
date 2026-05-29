@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Transaksi;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\CashAccount;
+use App\Models\CashTransaction;
 use App\Models\CompanySetting;
 use App\Models\Customer;
 use App\Models\Journal;
@@ -32,10 +33,13 @@ class SaleController extends Controller
         $defaultTax = Tax::active()->whereIn('applies_to', ['sale', 'all'])->first();
         $cashAccounts = CashAccount::active()->get();
         $defaultCashAccount = CashAccount::active()->where('is_default', true)->first();
+        $cashAccountsJson = $cashAccounts->map(function ($a) {
+            return ['id' => $a->id, 'name' => $a->name, 'type' => $a->type, 'is_default' => $a->is_default];
+        })->values()->toJson();
         $prefix = CompanySetting::first()->doc_prefix_inv ?? 'INV';
         $invoiceNumber = $prefix.'-'.now()->format('Ymd').'-'.strtoupper(substr(uniqid(), -5));
 
-        return view('pages.transaksi.pos.kasir', compact('customers', 'products', 'taxes', 'defaultTax', 'cashAccounts', 'defaultCashAccount', 'invoiceNumber'));
+        return view('pages.transaksi.pos.kasir', compact('customers', 'products', 'taxes', 'defaultTax', 'cashAccounts', 'defaultCashAccount', 'cashAccountsJson', 'invoiceNumber'));
     }
 
     public function store(Request $request)
@@ -78,6 +82,11 @@ class SaleController extends Controller
             $change = max(0, $paidAmount - $total);
             $status = ($validated['payment_method'] === 'credit') ? 'unpaid' : (($paidAmount >= $total) ? 'paid' : 'partial');
 
+            $cashAccountId = $validated['cash_account_id'] ?? null;
+            if ($validated['payment_method'] === 'cash' && ! $cashAccountId) {
+                $cashAccountId = CashAccount::active()->where('is_default', true)->value('id');
+            }
+
             $sale = Sale::create([
                 'invoice_number' => $validated['invoice_number'],
                 'customer_id' => $validated['customer_id'] ?? null,
@@ -86,7 +95,7 @@ class SaleController extends Controller
                 'payment_method' => $validated['payment_method'],
                 'tax_id' => $validated['tax_id'] ?? null,
                 'tax_amount' => $tax,
-                'cash_account_id' => $validated['cash_account_id'] ?? null,
+                'cash_account_id' => $cashAccountId,
                 'status' => $status,
                 'subtotal' => $subtotal,
                 'item_discount' => $itemDiscount,
@@ -137,6 +146,24 @@ class SaleController extends Controller
                     'remaining_amount' => $total,
                     'status' => 'open',
                 ]);
+            }
+
+            // Update cash account balance
+            if (in_array($validated['payment_method'], ['cash', 'transfer']) && $cashAccountId) {
+                $cashAccount = CashAccount::find($cashAccountId);
+                if ($cashAccount) {
+                    $cashAccount->current_balance += $total;
+                    $cashAccount->save();
+
+                    CashTransaction::create([
+                        'cash_account_id' => $cashAccountId,
+                        'type' => 'in',
+                        'amount' => $total,
+                        'description' => 'Penjualan POS - '.$sale->invoice_number,
+                        'transaction_date' => now(),
+                        'created_by' => auth()->id(),
+                    ]);
+                }
             }
 
             // Auto journal
