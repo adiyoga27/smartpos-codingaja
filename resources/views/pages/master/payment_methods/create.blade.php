@@ -31,6 +31,7 @@
                 <div class="md:col-span-2"><label class="form-label">Deskripsi</label><textarea name="description" class="form-input" rows="3">{{ old('description') }}</textarea></div>
                 <div><label class="form-check"><input type="hidden" name="is_available_pos" value="0"><input type="checkbox" name="is_available_pos" value="1" class="form-check-input" {{ old('is_available_pos', true) ? 'checked' : '' }}> Tersedia di POS</label></div>
                 <div><label class="form-check"><input type="hidden" name="is_available_purchase" value="0"><input type="checkbox" name="is_available_purchase" value="1" class="form-check-input" {{ old('is_available_purchase', true) ? 'checked' : '' }}> Tersedia di Pembelian</label></div>
+                <div><label class="form-check"><input type="hidden" name="is_credit" value="0"><input type="checkbox" name="is_credit" value="1" class="form-check-input" {{ old('is_credit') ? 'checked' : '' }}> Kredit (Hutang/Piutang)</label></div>
                 <div><label class="form-check"><input type="hidden" name="is_active" value="0"><input type="checkbox" name="is_active" value="1" class="form-check-input" {{ old('is_active', true) ? 'checked' : '' }}> Aktif</label></div>
                 <div class="col-span-full">
                     <button type="submit" class="btn btn-primary btn-md"><i class="bi bi-check-lg mr-1"></i>Simpan</button>

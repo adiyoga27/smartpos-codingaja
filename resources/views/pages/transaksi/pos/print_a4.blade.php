@@ -47,7 +47,7 @@
         <div>
             <strong>Customer:</strong> {{ $sale->customer?->name ?? $sale->customer_name ?? 'Walk-in' }}<br>
             <strong>Tanggal:</strong> {{ $sale->sale_date->isoFormat('dddd, D MMMM Y') }}<br>
-            <strong>Metode:</strong> {{ ucfirst($sale->payment_method) }}
+            <strong>Metode:</strong> {{ $sale->paymentMethod?->name ?? '-' }}
         </div>
         <div>
             <strong>Status:</strong> {{ $sale->status === 'paid' ? 'LUNAS' : strtoupper($sale->status) }}<br>

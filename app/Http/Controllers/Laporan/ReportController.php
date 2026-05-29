@@ -58,7 +58,7 @@ class ReportController extends Controller
     public function penjualan(Request $request)
     {
         if ($request->ajax()) {
-            $query = Sale::with('customer')->latest();
+            $query = Sale::with(['customer', 'paymentMethod'])->latest();
             if ($request->filled('from')) {
                 $query->whereDate('sale_date', '>=', $request->from);
             }
@@ -81,7 +81,7 @@ class ReportController extends Controller
                     $item->invoice_number,
                     $item->customer?->name ?? $item->customer_name ?? 'Umum',
                     $item->sale_date->format('d/m/Y'),
-                    ucfirst($item->payment_method),
+                    $item->paymentMethod?->name ?? '-',
                     formatRupiah($item->total),
                 ];
             });

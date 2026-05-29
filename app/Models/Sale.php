@@ -12,7 +12,7 @@ class Sale extends Model
 
     protected $fillable = [
         'invoice_number', 'customer_id', 'customer_name', 'sale_date', 'due_date',
-        'payment_method', 'tax_id', 'tax_amount', 'cash_account_id', 'status', 'subtotal', 'item_discount', 'total_discount', 'tax',
+        'payment_method_id', 'tax_id', 'tax_amount', 'cash_account_id', 'status', 'subtotal', 'item_discount', 'total_discount', 'tax',
         'total', 'paid_amount', 'change_amount', 'notes', 'created_by',
     ];
 
@@ -27,6 +27,11 @@ class Sale extends Model
         'paid_amount' => 'decimal:2',
         'change_amount' => 'decimal:2',
     ];
+
+    public function paymentMethod()
+    {
+        return $this->belongsTo(PaymentMethod::class);
+    }
 
     public function customer()
     {

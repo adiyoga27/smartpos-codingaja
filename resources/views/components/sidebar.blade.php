@@ -148,7 +148,8 @@
             </div>
             @endcanany
 
-            <!-- Kas & Bank -->
+            <!-- Kas & Bank - hidden -->
+            {{--
             @canany(['view_cash_account','view_cash_transaction'])
             <div>
                 <button @click="openMenus.kasBank = !openMenus.kasBank"
@@ -167,6 +168,7 @@
                 </div>
             </div>
             @endcanany
+            --}}
 
             <!-- Akuntansi -->
             @canany(['view_journal','view_ledger','view_balance_sheet','view_income_statement'])
@@ -189,6 +191,9 @@
                     @endcan
                     @can('view_income_statement')
                     <a href="{{ route('akuntansi.income_statement') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('akuntansi.income_statement') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">Laba Rugi</a>
+                    @endcan
+                    @can('view_cash_account')
+                    <a href="{{ route('laporan.arus_kas') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('laporan.arus_kas') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">Alur Kas/Bank</a>
                     @endcan
                 </div>
             </div>

@@ -38,11 +38,16 @@ class PaymentMethodController extends Controller
                     ? '<span class="badge bg-warning">Ya</span>'
                     : '<span class="badge bg-secondary">Tidak</span>';
 
+                $creditBadge = $item->is_credit
+                    ? '<span class="badge bg-danger">Kredit</span>'
+                    : '<span class="badge bg-info">Tunai</span>';
+
                 return [
                     $item->code,
                     $item->name,
                     $item->account?->name ?? '-',
                     $effectBadge,
+                    $creditBadge,
                     $posBadge,
                     $purchaseBadge,
                     $item->is_active ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-secondary">Nonaktif</span>',
@@ -76,6 +81,7 @@ class PaymentMethodController extends Controller
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['is_available_pos'] = $request->boolean('is_available_pos', true);
         $validated['is_available_purchase'] = $request->boolean('is_available_purchase', true);
+        $validated['is_credit'] = $request->boolean('is_credit');
         PaymentMethod::create($validated);
 
         return redirect()->route('master.payment_methods.index')->with('success', 'Metode pembayaran berhasil ditambahkan.');
@@ -100,6 +106,7 @@ class PaymentMethodController extends Controller
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['is_available_pos'] = $request->boolean('is_available_pos', true);
         $validated['is_available_purchase'] = $request->boolean('is_available_purchase', true);
+        $validated['is_credit'] = $request->boolean('is_credit');
         $paymentMethod->update($validated);
 
         return redirect()->route('master.payment_methods.index')->with('success', 'Metode pembayaran berhasil diperbarui.');

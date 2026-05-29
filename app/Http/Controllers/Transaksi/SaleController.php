@@ -10,6 +10,8 @@ use App\Models\CompanySetting;
 use App\Models\Customer;
 use App\Models\Journal;
 use App\Models\JournalEntry;
+use App\Models\PaymentMethod;
+use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\Receivable;
 use App\Models\Sale;
@@ -36,10 +38,11 @@ class SaleController extends Controller
         $cashAccountsJson = $cashAccounts->map(function ($a) {
             return ['id' => $a->id, 'name' => $a->name, 'type' => $a->type, 'is_default' => $a->is_default];
         })->values()->toJson();
+        $paymentMethods = PaymentMethod::active()->where('is_available_pos', true)->get();
         $prefix = CompanySetting::first()->doc_prefix_inv ?? 'INV';
         $invoiceNumber = $prefix.'-'.now()->format('Ymd').'-'.strtoupper(substr(uniqid(), -5));
 
-        return view('pages.transaksi.pos.kasir', compact('customers', 'products', 'taxes', 'defaultTax', 'cashAccounts', 'defaultCashAccount', 'cashAccountsJson', 'invoiceNumber'));
+        return view('pages.transaksi.pos.kasir', compact('customers', 'products', 'taxes', 'defaultTax', 'cashAccounts', 'defaultCashAccount', 'cashAccountsJson', 'paymentMethods', 'invoiceNumber'));
     }
 
     public function store(Request $request)
@@ -49,7 +52,7 @@ class SaleController extends Controller
             'customer_id' => 'nullable|exists:customers,id',
             'customer_name' => 'nullable|string|max:255',
             'sale_date' => 'required|date',
-            'payment_method' => 'required|in:cash,transfer,credit',
+            'payment_method_id' => 'required|exists:payment_methods,id',
             'cash_account_id' => 'nullable|exists:cash_accounts,id',
             'tax_id' => 'nullable|exists:taxes,id',
             'paid_amount' => 'nullable|numeric|min:0',
@@ -80,10 +83,13 @@ class SaleController extends Controller
             $total = $subtotal + $tax - $totalDiscount;
             $paidAmount = $validated['paid_amount'] ?? $total;
             $change = max(0, $paidAmount - $total);
-            $status = ($validated['payment_method'] === 'credit') ? 'unpaid' : (($paidAmount >= $total) ? 'paid' : 'partial');
+
+            $paymentMethod = PaymentMethod::findOrFail($validated['payment_method_id']);
+            $isCredit = $paymentMethod->is_credit;
+            $status = $isCredit ? 'unpaid' : (($paidAmount >= $total) ? 'paid' : 'partial');
 
             $cashAccountId = $validated['cash_account_id'] ?? null;
-            if ($validated['payment_method'] === 'cash' && ! $cashAccountId) {
+            if (! $isCredit && ! $cashAccountId) {
                 $cashAccountId = CashAccount::active()->where('is_default', true)->value('id');
             }
 
@@ -92,7 +98,7 @@ class SaleController extends Controller
                 'customer_id' => $validated['customer_id'] ?? null,
                 'customer_name' => $validated['customer_name'] ?? null,
                 'sale_date' => $validated['sale_date'],
-                'payment_method' => $validated['payment_method'],
+                'payment_method_id' => $validated['payment_method_id'],
                 'tax_id' => $validated['tax_id'] ?? null,
                 'tax_amount' => $tax,
                 'cash_account_id' => $cashAccountId,
@@ -135,7 +141,7 @@ class SaleController extends Controller
             }
 
             // Create receivable if credit
-            if ($validated['payment_method'] === 'credit' && $validated['customer_id']) {
+            if ($isCredit && $validated['customer_id']) {
                 Receivable::create([
                     'customer_id' => $validated['customer_id'],
                     'sale_id' => $sale->id,
@@ -149,7 +155,7 @@ class SaleController extends Controller
             }
 
             // Update cash account balance
-            if (in_array($validated['payment_method'], ['cash', 'transfer']) && $cashAccountId) {
+            if (! $isCredit && $cashAccountId) {
                 $cashAccount = CashAccount::find($cashAccountId);
                 if ($cashAccount) {
                     $cashAccount->current_balance += $total;
@@ -167,10 +173,8 @@ class SaleController extends Controller
             }
 
             // Auto journal
-            $cashAccount = Account::where('code', '1-1000')->first();
-            $piutangAccount = Account::where('code', '1-1200')->first();
             $penjualanAccount = Account::where('code', '4-1000')->first();
-            if ($penjualanAccount) {
+            if ($penjualanAccount && $paymentMethod->account_id) {
                 $journal = Journal::create([
                     'journal_number' => 'JUR-'.now()->format('Ymd').'-'.str_pad((Journal::count() + 1), 4, '0', STR_PAD_LEFT),
                     'journal_date' => now(),
@@ -182,14 +186,7 @@ class SaleController extends Controller
                     'total_credit' => $total,
                     'created_by' => auth()->id(),
                 ]);
-                if ($validated['payment_method'] === 'cash' && $cashAccount) {
-                    JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $cashAccount->id, 'debit' => $total, 'credit' => 0]);
-                } elseif ($validated['payment_method'] === 'credit' && $piutangAccount) {
-                    JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $piutangAccount->id, 'debit' => $total, 'credit' => 0]);
-                } else {
-                    // Fallback to cash account
-                    JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $cashAccount->id, 'debit' => $total, 'credit' => 0]);
-                }
+                JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $paymentMethod->account_id, 'debit' => $total, 'credit' => 0]);
                 JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $penjualanAccount->id, 'debit' => 0, 'credit' => $total]);
             }
         });
@@ -199,7 +196,7 @@ class SaleController extends Controller
 
     public function printA4(Sale $sale)
     {
-        $sale->load(['items.product', 'creator']);
+        $sale->load(['items.product', 'creator', 'paymentMethod']);
         $company = CompanySetting::first();
 
         return view('pages.transaksi.pos.print_a4', compact('sale', 'company'));
@@ -207,7 +204,7 @@ class SaleController extends Controller
 
     public function printThermal(Sale $sale)
     {
-        $sale->load('items.product');
+        $sale->load(['items.product', 'paymentMethod']);
         $company = CompanySetting::first();
 
         return view('pages.transaksi.pos.print_thermal', compact('sale', 'company'));
@@ -216,15 +213,15 @@ class SaleController extends Controller
     public function riwayat(Request $request)
     {
         if ($request->ajax()) {
-            $query = Sale::with('customer')->latest();
+            $query = Sale::with(['customer', 'paymentMethod'])->latest();
             if ($request->filled('from')) {
                 $query->whereDate('sale_date', '>=', $request->from);
             }
             if ($request->filled('to')) {
                 $query->whereDate('sale_date', '<=', $request->to);
             }
-            if ($request->filled('payment_method')) {
-                $query->where('payment_method', $request->payment_method);
+            if ($request->filled('payment_method_id')) {
+                $query->where('payment_method_id', $request->payment_method_id);
             }
             $draw = (int) $request->input('draw', 1);
             $start = (int) $request->input('start', 0);
@@ -249,7 +246,7 @@ class SaleController extends Controller
                     $item->invoice_number,
                     $item->customer?->name ?? $item->customer_name ?? 'Umum',
                     $item->sale_date->format('d/m/Y'),
-                    ucfirst($item->payment_method),
+                    $item->paymentMethod?->name ?? '-',
                     formatRupiah($item->total),
                     $statusBadge,
                 ];
@@ -258,6 +255,8 @@ class SaleController extends Controller
             return response()->json(['draw' => $draw, 'recordsTotal' => $total, 'recordsFiltered' => $filtered, 'data' => $data]);
         }
 
-        return view('pages.transaksi.pos.riwayat');
+        $paymentMethods = PaymentMethod::active()->where('is_available_pos', true)->get();
+
+        return view('pages.transaksi.pos.riwayat', compact('paymentMethods'));
     }
 }

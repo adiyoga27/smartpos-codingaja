@@ -10,11 +10,11 @@
     <form id="filter-form" class="flex gap-2">
         <input type="date" id="from" name="from" class="form-input" value="{{ request('from') }}">
         <input type="date" id="to" name="to" class="form-input" value="{{ request('to') }}">
-        <select id="payment_method" name="payment_method" class="form-select">
+        <select id="payment_method" name="payment_method_id" class="form-select">
             <option value="">Semua</option>
-            <option value="cash" {{ request('payment_method')=='cash'?'selected':'' }}>Tunai</option>
-            <option value="transfer" {{ request('payment_method')=='transfer'?'selected':'' }}>Transfer</option>
-            <option value="credit" {{ request('payment_method')=='credit'?'selected':'' }}>Kredit</option>
+            @foreach($paymentMethods as $pm)
+            <option value="{{ $pm->id }}" {{ request('payment_method_id') == $pm->id ? 'selected' : '' }}>{{ $pm->name }}</option>
+            @endforeach
         </select>
         <button type="button" id="btn-filter" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
     </form>
@@ -40,7 +40,7 @@ $(document).ready(function() {
             data: function(d) {
                 d.from = $('#from').val();
                 d.to = $('#to').val();
-                d.payment_method = $('#payment_method').val();
+                d.payment_method_id = $('#payment_method').val();
             }
         },
         pageLength: 25,

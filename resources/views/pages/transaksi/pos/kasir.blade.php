@@ -168,17 +168,17 @@
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Pembayaran</label>
-                            <select name="payment_method" class="form-select text-sm" id="paymentMethod" required>
-                                <option value="cash">Tunai</option>
-                                <option value="transfer">Transfer Bank</option>
-                                <option value="credit">Kredit (Hutang)</option>
+                            <select name="payment_method_id" class="form-select text-sm" id="paymentMethod" required>
+                                @foreach($paymentMethods as $pm)
+                                <option value="{{ $pm->id }}" data-credit="{{ $pm->is_credit ? '1' : '0' }}">{{ $pm->name }}</option>
+                                @endforeach
                             </select>
                         </div>
-                        <div id="bankPanel" style="display:none;">
-                            <label class="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Akun Bank</label>
+                        <div id="bankPanel">
+                            <label class="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Akun Kas/Bank</label>
                             <select name="cash_account_id" class="form-select text-sm" id="cashAccountSelect">
-                                @foreach($cashAccounts->where('type', 'bank') as $acc)
-                                <option value="{{ $acc->id }}">{{ $acc->name }}</option>
+                                @foreach($cashAccounts as $acc)
+                                <option value="{{ $acc->id }}" {{ isset($defaultCashAccount) && $acc->id === $defaultCashAccount->id ? 'selected' : '' }}>{{ $acc->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -432,12 +432,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let pm = document.getElementById('paymentMethod');
     if (pm) {
         pm.addEventListener('change', function() {
+            let selected = this.options[this.selectedIndex];
+            let isCredit = selected && selected.dataset.credit === '1';
             let cash = document.getElementById('cashPanel');
             let cashTotal = document.getElementById('cashPanelTotal');
             let bankPanel = document.getElementById('bankPanel');
-            if (cash) cash.style.display = this.value === 'cash' ? '' : 'none';
-            if (cashTotal) cashTotal.style.display = this.value === 'cash' ? '' : 'none';
-            if (bankPanel) bankPanel.style.display = this.value === 'transfer' ? '' : 'none';
+            if (cash) cash.style.display = isCredit ? 'none' : '';
+            if (cashTotal) cashTotal.style.display = isCredit ? 'none' : '';
+            if (bankPanel) bankPanel.style.display = isCredit ? 'none' : '';
         });
         pm.dispatchEvent(new Event('change'));
     }

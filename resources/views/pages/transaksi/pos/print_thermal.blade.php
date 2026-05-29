@@ -36,7 +36,7 @@
     <table>
         <tr><td>{{ $sale->invoice_number }}</td><td class="right">{{ $sale->sale_date->format('d/m/Y H:i') }}</td></tr>
         <tr><td colspan="2">{{ $sale->customer?->name ?? $sale->customer_name ?? 'Walk-in' }}</td></tr>
-        <tr><td colspan="2">{{ ucfirst($sale->payment_method) }}</td></tr>
+        <tr><td colspan="2">{{ $sale->paymentMethod?->name ?? '-' }}</td></tr>
     </table>
     <div class="line"></div>
     <table>
