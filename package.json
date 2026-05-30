@@ -7,6 +7,7 @@
         "dev": "vite"
     },
     "devDependencies": {
+        "@playwright/test": "^1.60.0",
         "@tailwindcss/vite": "^4.3.0",
         "bootstrap-icons": "^1.11.3",
         "laravel-vite-plugin": "^3.1",
