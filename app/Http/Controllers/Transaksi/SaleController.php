@@ -46,13 +46,16 @@ class SaleController extends Controller
 
     public function store(Request $request)
     {
+        $paymentMethod = PaymentMethod::find($request->payment_method_id);
+        $isCredit = $paymentMethod && $paymentMethod->is_credit;
+
         $validated = $request->validate([
             'invoice_number' => 'required|string|unique:sales',
-            'customer_id' => 'nullable|exists:customers,id',
+            'customer_id' => $isCredit ? 'required|exists:customers,id' : 'nullable|exists:customers,id',
             'customer_name' => 'nullable|string|max:255',
             'sale_date' => 'required|date',
             'payment_method_id' => 'required|exists:payment_methods,id',
-            'cash_account_id' => 'nullable|exists:cash_accounts,id',
+            'cash_account_id' => $isCredit ? 'nullable|exists:cash_accounts,id' : 'nullable|exists:cash_accounts,id',
             'tax_id' => 'nullable|exists:taxes,id',
             'paid_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
@@ -62,11 +65,13 @@ class SaleController extends Controller
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.discount' => 'nullable|numeric|min:0',
+        ], [
+            'customer_id.required' => 'Silahkan pilih customer terlebih dahulu untuk pembayaran kredit.',
         ]);
 
         $sale = null;
 
-        DB::transaction(function () use ($validated, &$sale) {
+        DB::transaction(function () use ($validated, &$sale, $paymentMethod, $isCredit) {
             $subtotal = 0;
             $itemDiscount = 0;
             foreach ($validated['items'] as $item) {
@@ -84,8 +89,6 @@ class SaleController extends Controller
             $paidAmount = $validated['paid_amount'] ?? $total;
             $change = max(0, $paidAmount - $total);
 
-            $paymentMethod = PaymentMethod::findOrFail($validated['payment_method_id']);
-            $isCredit = $paymentMethod->is_credit;
             $status = $isCredit ? 'unpaid' : (($paidAmount >= $total) ? 'paid' : 'partial');
 
             $cashAccountId = $validated['cash_account_id'] ?? null;
@@ -247,8 +250,11 @@ class SaleController extends Controller
                     $actions .= '<div class="flex gap-1">'
                         .'<a href="'.route('pos.print-a4', $item).'" target="_blank" class="btn btn-sm btn-outline-primary" title="Cetak A4"><i class="bi bi-printer"></i></a>'
                         .'<a href="'.route('pos.print-thermal', $item).'" target="_blank" class="btn btn-sm btn-outline-secondary" title="Cetak Thermal"><i class="bi bi-receipt"></i></a>'
-                        .'<button type="button" class="btn btn-sm btn-outline-info btn-detail" data-id="'.$item->id.'" title="Detail"><i class="bi bi-eye"></i></button>'
-                        .'</div>';
+                        .'<a href="'.route('pos.detail', $item).'" target="_blank" class="btn btn-sm btn-outline-info" title="Detail"><i class="bi bi-eye"></i></a>';
+                    if (auth()->user()->can('edit_sale')) {
+                        $actions .= '<a href="'.route('pos.edit', $item).'" class="btn btn-sm btn-outline-warning" title="Edit"><i class="bi bi-pencil"></i></a>';
+                    }
+                    $actions .= '</div>';
                 }
 
                 return [
@@ -304,6 +310,22 @@ class SaleController extends Controller
                 ]),
             ],
         ]);
+    }
+
+    public function detail(Sale $sale)
+    {
+        $sale->load(['items.product', 'paymentMethod', 'customer', 'creator']);
+
+        return view('pages.transaksi.pos.detail', compact('sale'));
+    }
+
+    public function edit(Sale $sale)
+    {
+        $sale->load(['items.product', 'paymentMethod', 'customer']);
+        $paymentMethods = PaymentMethod::active()->where('is_available_pos', true)->get();
+        $taxes = Tax::active()->get();
+
+        return view('pages.transaksi.pos.edit', compact('sale', 'paymentMethods', 'taxes'));
     }
 
     public function recentSales()

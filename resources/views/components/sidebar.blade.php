@@ -13,7 +13,7 @@
     hutangPiutang: {{ request()->routeIs('keuangan.payables.*','keuangan.receivables.*') ? 'true' : 'false' }},
     @endcanany
     @canany(['view_cash_account','view_cash_transaction'])
-    kasBank: {{ request()->routeIs('keuangan.cash.*') ? 'true' : 'false' }},
+    kasBank: {{ request()->routeIs('keuangan.cash.*','laporan.arus_kas') ? 'true' : 'false' }},
     @endcanany
     @canany(['view_journal','view_ledger','view_balance_sheet','view_income_statement'])
     akuntansi: {{ request()->routeIs('akuntansi.*') ? 'true' : 'false' }},
@@ -148,14 +148,13 @@
             </div>
             @endcanany
 
-            <!-- Kas & Bank - hidden -->
-            {{--
+            <!-- Kas & Bank -->
             @canany(['view_cash_account','view_cash_transaction'])
             <div>
                 <button @click="openMenus.kasBank = !openMenus.kasBank"
                         class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 text-slate-300 hover:bg-sidebar-hover hover:text-white">
                     <i class="bi bi-bank text-lg w-5 text-center"></i>
-                    <span class="flex-1 text-left">Kas & Bank</span>
+                    <span class="flex-1 text-left">Alur Kas & Bank</span>
                     <i class="bi bi-chevron-down text-xs transition-transform duration-200" :class="openMenus.kasBank && 'rotate-180'"></i>
                 </button>
                 <div x-show="openMenus.kasBank" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="ml-4 mt-1 space-y-0.5">
@@ -165,10 +164,10 @@
                     @can('view_cash_transaction')
                     <a href="{{ route('keuangan.cash_transactions.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('keuangan.cash_transactions.*') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">Transaksi Kas</a>
                     @endcan
+                    <a href="{{ route('laporan.arus_kas') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('laporan.arus_kas') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">Alur Kas/Bank</a>
                 </div>
             </div>
             @endcanany
-            --}}
 
             <!-- Akuntansi -->
             @canany(['view_journal','view_ledger','view_balance_sheet','view_income_statement'])
@@ -191,9 +190,6 @@
                     @endcan
                     @can('view_income_statement')
                     <a href="{{ route('akuntansi.income_statement') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('akuntansi.income_statement') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">Laba Rugi</a>
-                    @endcan
-                    @can('view_cash_account')
-                    <a href="{{ route('laporan.arus_kas') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('laporan.arus_kas') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">Alur Kas/Bank</a>
                     @endcan
                 </div>
             </div>

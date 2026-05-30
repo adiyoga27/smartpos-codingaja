@@ -56,6 +56,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('pos/kasir', [SaleController::class, 'store'])->name('transaksi.sales.store');
     Route::get('pos/riwayat', [SaleController::class, 'riwayat'])->name('pos.riwayat');
     Route::get('pos/riwayat/{sale}', [SaleController::class, 'riwayatDetail'])->name('pos.riwayat.detail');
+    Route::get('pos/detail/{sale}', [SaleController::class, 'detail'])->name('pos.detail');
+    Route::get('pos/edit/{sale}', [SaleController::class, 'edit'])->name('pos.edit');
     Route::get('pos/recent', [SaleController::class, 'recentSales'])->name('pos.recent');
     Route::post('pos/customer-quick', [SaleController::class, 'customerQuickStore'])->name('pos.customer-quick');
     Route::get('pos/print-a4/{sale}', [SaleController::class, 'printA4'])->name('pos.print-a4');

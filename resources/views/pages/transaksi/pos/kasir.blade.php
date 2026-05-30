@@ -617,7 +617,21 @@ document.addEventListener('DOMContentLoaded', () => {
     let form = document.getElementById('posForm');
     if (form) {
         form.addEventListener('keydown', function(e) { if (e.key === 'Enter') e.preventDefault(); });
-        form.addEventListener('submit', function() {
+        form.addEventListener('submit', function(e) {
+            let pm = document.getElementById('paymentMethod');
+            if (pm) {
+                let selected = pm.options[pm.selectedIndex];
+                let isCredit = selected && selected.dataset.credit === '1';
+                if (isCredit) {
+                    let custInput = document.querySelector('input[name="customer_id"]');
+                    let custId = custInput ? custInput.value : '';
+                    if (!custId) {
+                        e.preventDefault();
+                        showToast('Silahkan pilih customer untuk pembayaran kredit!', 'error');
+                        return false;
+                    }
+                }
+            }
             let p = document.getElementById('paidAmount');
             if (p) p.value = p.value.replace(/\D/g, '') || '0';
             document.querySelectorAll('#cartTable tbody .price-input, #cartTable tbody .disc-input').forEach(function(el) {

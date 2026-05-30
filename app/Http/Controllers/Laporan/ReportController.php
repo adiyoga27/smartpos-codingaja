@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Laporan;
 
 use App\Http\Controllers\Controller;
+use App\Models\CashTransaction;
 use App\Models\Payable;
 use App\Models\Product;
 use App\Models\Purchase;
@@ -162,7 +163,31 @@ class ReportController extends Controller
 
     public function arusKas(Request $request)
     {
-        return view('pages.laporan.arus_kas');
+        $from = $request->input('from', now()->startOfMonth()->format('Y-m-d'));
+        $to = $request->input('to', now()->endOfMonth()->format('Y-m-d'));
+
+        $saleCashIn = Sale::whereHas('paymentMethod', fn ($q) => $q->where('is_credit', false))
+            ->whereBetween('sale_date', [$from, $to])
+            ->sum('total');
+
+        $cashTransactionIn = CashTransaction::where('type', 'in')
+            ->whereBetween('transaction_date', [$from, $to])
+            ->sum('amount');
+
+        $cashTransactionOut = CashTransaction::where('type', 'out')
+            ->whereBetween('transaction_date', [$from, $to])
+            ->sum('amount');
+
+        $totalIn = $saleCashIn + $cashTransactionIn;
+        $totalOut = $cashTransactionOut;
+        $netCash = $totalIn - $totalOut;
+
+        return view('pages.laporan.arus_kas', compact(
+            'from', 'to',
+            'saleCashIn', 'cashTransactionIn', 'totalIn',
+            'cashTransactionOut', 'totalOut',
+            'netCash'
+        ));
     }
 
     public function stok(Request $request)

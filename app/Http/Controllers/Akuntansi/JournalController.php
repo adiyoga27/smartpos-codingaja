@@ -79,7 +79,7 @@ class JournalController extends Controller
             return back()->with('error', 'Total debit harus sama dengan total kredit.')->withInput();
         }
 
-        DB::transaction(function () use ($validated) {
+        DB::transaction(function () use ($validated, $totalDebit, $totalCredit) {
             $journal = Journal::create([
                 'journal_number' => $validated['journal_number'],
                 'journal_date' => $validated['journal_date'],
