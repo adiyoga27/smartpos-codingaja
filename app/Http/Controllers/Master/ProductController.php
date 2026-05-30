@@ -60,6 +60,11 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge([
+            'purchase_unit' => $request->input('purchase_unit', $request->input('unit', 'PCS')),
+            'conversion_factor' => $request->input('conversion_factor', 1),
+        ]);
+
         $validated = $request->validate([
             'code' => 'required|string|max:50|unique:products',
             'name' => 'required|string|max:255',
@@ -97,6 +102,11 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
+        $request->merge([
+            'purchase_unit' => $request->input('purchase_unit', $request->input('unit', $product->purchase_unit ?? 'PCS')),
+            'conversion_factor' => $request->input('conversion_factor', $product->conversion_factor ?? 1),
+        ]);
+
         $validated = $request->validate([
             'code' => 'required|string|max:50|unique:products,code,'.$product->id,
             'name' => 'required|string|max:255',
