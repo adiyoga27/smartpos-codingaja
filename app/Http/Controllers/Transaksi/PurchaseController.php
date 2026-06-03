@@ -40,7 +40,8 @@ class PurchaseController extends Controller
                     'completed' => '<span class="badge bg-success">Selesai</span>',
                     default => '<span class="badge bg-danger">Batal</span>',
                 };
-                $actions = '<a href="'.route('transaksi.purchases.show', $item).'" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>';
+                $actions = '<a href="'.route('transaksi.purchases.show', $item).'" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>'
+                    .'<a href="'.route('transaksi.purchases.print', $item).'" target="_blank" class="btn btn-sm btn-warning"><i class="bi bi-printer"></i></a>';
                 if (! in_array($item->status, ['completed', 'cancelled'])) {
                     $actions .= '<form action="'.route('transaksi.purchases.destroy', $item).'" method="POST" class="d-inline" onsubmit="return confirm(\'Hapus PO ini?\')">'.csrf_field().method_field('DELETE').'<button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button></form>';
                 }
@@ -212,5 +213,13 @@ class PurchaseController extends Controller
         $purchase->delete();
 
         return redirect()->route('transaksi.purchases.index')->with('success', 'PO berhasil dihapus.');
+    }
+
+    public function print(Purchase $purchase)
+    {
+        $purchase->load(['items.product', 'supplier', 'creator']);
+        $company = CompanySetting::first();
+
+        return view('pages.transaksi.purchases.print', compact('purchase', 'company'));
     }
 }

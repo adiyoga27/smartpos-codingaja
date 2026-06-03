@@ -16,6 +16,15 @@
                 <div><label class="form-label">Tipe</label>
                     <select name="type" class="form-select" required><option value="cash" {{ old('type', $cashAccount->type) == 'cash' ? 'selected' : '' }}>Kas</option><option value="bank" {{ old('type', $cashAccount->type) == 'bank' ? 'selected' : '' }}>Bank</option></select>
                 </div>
+                <div>
+                    <label class="form-label">Akun COA (Chart of Accounts)</label>
+                    <select name="account_id" class="form-select select2">
+                        <option value="">- Pilih Akun COA -</option>
+                        @foreach($coaAccounts as $coa)
+                        <option value="{{ $coa->id }}" {{ old('account_id', $cashAccount->account_id) == $coa->id ? 'selected' : '' }}>{{ $coa->code }} - {{ $coa->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div><label class="form-label">Nama Bank</label><input type="text" name="bank_name" class="form-input" value="{{ old('bank_name', $cashAccount->bank_name) }}"></div>
                 <div><label class="form-label">No. Rekening</label><input type="text" name="account_number" class="form-input" value="{{ old('account_number', $cashAccount->account_number) }}"></div>
                 <div class="flex items-center">
@@ -32,4 +41,9 @@
         </form>
     </div>
 </div>
+@push('scripts')
+<script>
+$(document).ready(function() { $('.select2').select2({ theme: 'bootstrap-5', width: '100%' }); });
+</script>
+@endpush
 @endsection

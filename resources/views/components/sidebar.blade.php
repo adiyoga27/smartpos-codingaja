@@ -6,8 +6,8 @@
     @canany(['view_purchase','view_purchase_return'])
     pembelian: {{ request()->routeIs('transaksi.purchases.*','transaksi.purchase_returns.*') ? 'true' : 'false' }},
     @endcanany
-    @canany(['view_sale','view_sale_return'])
-    penjualan: {{ request()->routeIs('pos.*','transaksi.sale_returns.*') ? 'true' : 'false' }},
+    @canany(['view_sale','view_sale_return','view_sales_order'])
+    penjualan: {{ request()->routeIs('pos.*','transaksi.sale_returns.*','transaksi.sales_orders.*','transaksi.delivery_orders.*') ? 'true' : 'false' }},
     @endcanany
     @canany(['view_payable','view_receivable'])
     hutangPiutang: {{ request()->routeIs('keuangan.payables.*','keuangan.receivables.*') ? 'true' : 'false' }},
@@ -38,7 +38,7 @@
                 <img src="{{ asset('storage/'.$company->logo) }}" alt="Logo" class="h-8 w-8 rounded-lg object-cover">
             @else
                 <div class="h-8 w-8 rounded-lg bg-primary-500/20 flex items-center justify-center">
-                    <i class="bi bi-shop-window text-primary-400 text-lg"></i>
+                    <i class="bi bi-shop-window text-amber-400 text-lg"></i>
                 </div>
             @endif
             <span class="text-lg font-bold text-white tracking-tight">SmartPOS</span>
@@ -50,7 +50,7 @@
             <a href="{{ route('dashboard') }}"
                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
                       {{ request()->routeIs('dashboard') ? 'bg-sidebar-active text-white shadow-sm' : 'text-slate-300 hover:bg-sidebar-hover hover:text-white' }}">
-                <i class="bi bi-speedometer2 text-lg w-5 text-center"></i>
+                <i class="bi bi-speedometer2 text-sky-400 text-lg w-5 text-center"></i>
                 <span>Dashboard</span>
             </a>
 
@@ -59,7 +59,7 @@
             <div>
                 <button @click="openMenus.master = !openMenus.master"
                         class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 text-slate-300 hover:bg-sidebar-hover hover:text-white">
-                    <i class="bi bi-database text-lg w-5 text-center"></i>
+                    <i class="bi bi-database text-amber-400 text-lg w-5 text-center"></i>
                     <span class="flex-1 text-left">Data Master</span>
                     <i class="bi bi-chevron-down text-xs transition-transform duration-200" :class="openMenus.master && 'rotate-180'"></i>
                 </button>
@@ -92,7 +92,7 @@
             <div>
                 <button @click="openMenus.pembelian = !openMenus.pembelian"
                         class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 text-slate-300 hover:bg-sidebar-hover hover:text-white">
-                    <i class="bi bi-cart-check text-lg w-5 text-center"></i>
+                    <i class="bi bi-cart-check text-emerald-400 text-lg w-5 text-center"></i>
                     <span class="flex-1 text-left">Pembelian</span>
                     <i class="bi bi-chevron-down text-xs transition-transform duration-200" :class="openMenus.pembelian && 'rotate-180'"></i>
                 </button>
@@ -108,15 +108,21 @@
             @endcanany
 
             <!-- Penjualan -->
-            @canany(['view_sale','view_sale_return'])
+            @canany(['view_sale','view_sale_return','view_sales_order'])
             <div>
                 <button @click="openMenus.penjualan = !openMenus.penjualan"
                         class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 text-slate-300 hover:bg-sidebar-hover hover:text-white">
-                    <i class="bi bi-cart3 text-lg w-5 text-center"></i>
+                    <i class="bi bi-cart3 text-rose-400 text-lg w-5 text-center"></i>
                     <span class="flex-1 text-left">Penjualan</span>
                     <i class="bi bi-chevron-down text-xs transition-transform duration-200" :class="openMenus.penjualan && 'rotate-180'"></i>
                 </button>
                 <div x-show="openMenus.penjualan" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="ml-4 mt-1 space-y-0.5">
+                    @can('view_sales_order')
+                    <a href="{{ route('transaksi.sales_orders.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('transaksi.sales_orders.*') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">Sales Order</a>
+                    @endcan
+                    @can('view_sales_order')
+                    <a href="{{ route('transaksi.delivery_orders.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('transaksi.delivery_orders.*') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">Delivery Order</a>
+                    @endcan
                     @can('view_sale')
                     <a href="{{ route('pos.kasir') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('pos.kasir') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">POS Kasir</a>
                     @endcan
@@ -133,7 +139,7 @@
             <div>
                 <button @click="openMenus.hutangPiutang = !openMenus.hutangPiutang"
                         class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 text-slate-300 hover:bg-sidebar-hover hover:text-white">
-                    <i class="bi bi-cash-stack text-lg w-5 text-center"></i>
+                    <i class="bi bi-cash-stack text-orange-400 text-lg w-5 text-center"></i>
                     <span class="flex-1 text-left">Hutang & Piutang</span>
                     <i class="bi bi-chevron-down text-xs transition-transform duration-200" :class="openMenus.hutangPiutang && 'rotate-180'"></i>
                 </button>
@@ -153,7 +159,7 @@
             <div>
                 <button @click="openMenus.kasBank = !openMenus.kasBank"
                         class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 text-slate-300 hover:bg-sidebar-hover hover:text-white">
-                    <i class="bi bi-bank text-lg w-5 text-center"></i>
+                    <i class="bi bi-bank text-cyan-400 text-lg w-5 text-center"></i>
                     <span class="flex-1 text-left">Alur Kas & Bank</span>
                     <i class="bi bi-chevron-down text-xs transition-transform duration-200" :class="openMenus.kasBank && 'rotate-180'"></i>
                 </button>
@@ -174,7 +180,7 @@
             <div>
                 <button @click="openMenus.akuntansi = !openMenus.akuntansi"
                         class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 text-slate-300 hover:bg-sidebar-hover hover:text-white">
-                    <i class="bi bi-journal-text text-lg w-5 text-center"></i>
+                    <i class="bi bi-journal-text text-violet-400 text-lg w-5 text-center"></i>
                     <span class="flex-1 text-left">Akuntansi</span>
                     <i class="bi bi-chevron-down text-xs transition-transform duration-200" :class="openMenus.akuntansi && 'rotate-180'"></i>
                 </button>
@@ -200,7 +206,7 @@
             <div>
                 <button @click="openMenus.stok = !openMenus.stok"
                         class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 text-slate-300 hover:bg-sidebar-hover hover:text-white">
-                    <i class="bi bi-box-seam text-lg w-5 text-center"></i>
+                    <i class="bi bi-box-seam text-lime-400 text-lg w-5 text-center"></i>
                     <span class="flex-1 text-left">Stok Kontrol</span>
                     <i class="bi bi-chevron-down text-xs transition-transform duration-200" :class="openMenus.stok && 'rotate-180'"></i>
                 </button>
@@ -216,7 +222,7 @@
             <a href="{{ route('laporan.index') }}"
                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
                       {{ request()->routeIs('laporan.*') ? 'bg-sidebar-active text-white shadow-sm' : 'text-slate-300 hover:bg-sidebar-hover hover:text-white' }}">
-                <i class="bi bi-file-earmark-bar-graph text-lg w-5 text-center"></i>
+                <i class="bi bi-file-earmark-bar-graph text-fuchsia-400 text-lg w-5 text-center"></i>
                 <span>Laporan</span>
             </a>
             @endcan
@@ -226,7 +232,7 @@
             <a href="{{ route('settings.company') }}"
                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
                       {{ request()->routeIs('settings.*') ? 'bg-sidebar-active text-white shadow-sm' : 'text-slate-300 hover:bg-sidebar-hover hover:text-white' }}">
-                <i class="bi bi-gear text-lg w-5 text-center"></i>
+                <i class="bi bi-gear text-slate-400 text-lg w-5 text-center"></i>
                 <span>Pengaturan</span>
             </a>
             @endcan
@@ -236,7 +242,7 @@
             <div>
                 <button @click="openMenus.pengguna = !openMenus.pengguna"
                         class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 text-slate-300 hover:bg-sidebar-hover hover:text-white">
-                    <i class="bi bi-people text-lg w-5 text-center"></i>
+                    <i class="bi bi-people text-indigo-400 text-lg w-5 text-center"></i>
                     <span class="flex-1 text-left">Pengguna</span>
                     <i class="bi bi-chevron-down text-xs transition-transform duration-200" :class="openMenus.pengguna && 'rotate-180'"></i>
                 </button>
@@ -256,14 +262,14 @@
         <div class="border-t border-white/5 px-3 py-3 space-y-1">
             <a href="{{ route('profile.edit') }}"
                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 text-slate-400 hover:bg-sidebar-hover hover:text-white">
-                <i class="bi bi-person-circle text-lg w-5 text-center"></i>
+                <i class="bi bi-person-circle text-teal-400 text-lg w-5 text-center"></i>
                 <span>Profil</span>
             </a>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit"
                         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 w-full text-slate-400 hover:bg-red-500/10 hover:text-red-400">
-                    <i class="bi bi-box-arrow-left text-lg w-5 text-center"></i>
+                    <i class="bi bi-box-arrow-left text-red-400 text-lg w-5 text-center"></i>
                     <span>Keluar</span>
                 </button>
             </form>

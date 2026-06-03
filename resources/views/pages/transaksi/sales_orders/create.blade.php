@@ -1,15 +1,15 @@
 @extends('layouts.app')
-@section('title', 'Buat PO')
+@section('title', 'Buat SO')
 @section('breadcrumb')
-    <li class="breadcrumb-item"><a href="{{ route('transaksi.purchases.index') }}">Pembelian</a></li>
-    <li class="breadcrumb-item active">Buat PO</li>
+    <li class="breadcrumb-item"><a href="{{ route('transaksi.sales_orders.index') }}">Sales Order</a></li>
+    <li class="breadcrumb-item active">Buat SO</li>
 @endsection
 @section('content')
-<div x-data="poForm()">
-<form action="{{ route('transaksi.purchases.store') }}" method="POST" id="poForm" @submit.prevent="handleSubmit">
+<div x-data="soForm()">
+<form action="{{ route('transaksi.sales_orders.store') }}" method="POST" id="soForm" @submit.prevent="handleSubmit">
     @csrf
     <div class="card mb-4">
-        <div class="card-header"><h6 class="mb-0"><i class="bi bi-cart-check text-emerald-500 me-1"></i> Detail Purchase Order</h6></div>
+        <div class="card-header"><h6 class="mb-0"><i class="bi bi-cart3 text-rose-500 me-1"></i> Detail Sales Order</h6></div>
         <div class="card-body">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div>
@@ -17,15 +17,15 @@
                     <input type="text" name="document_number" class="form-input form-input-sm" value="{{ $documentNumber }}" readonly required>
                 </div>
                 <div>
-                    <label class="form-label text-xs">Supplier</label>
-                    <select name="supplier_id" class="form-select form-select-sm select2" required>
-                        <option value="">- Pilih Supplier -</option>
-                        @foreach($suppliers as $id => $name)<option value="{{ $id }}">{{ $name }}</option>@endforeach
+                    <label class="form-label text-xs">Customer</label>
+                    <select name="customer_id" class="form-select form-select-sm select2" required>
+                        <option value="">- Pilih Customer -</option>
+                        @foreach($customers as $id => $name)<option value="{{ $id }}">{{ $name }}</option>@endforeach
                     </select>
                 </div>
                 <div>
                     <label class="form-label text-xs">Tanggal</label>
-                    <input type="date" name="purchase_date" class="form-input form-input-sm" value="{{ now()->format('Y-m-d') }}" required>
+                    <input type="date" name="order_date" class="form-input form-input-sm" value="{{ now()->format('Y-m-d') }}" required>
                 </div>
                 <div>
                     <label class="form-label text-xs">Jatuh Tempo</label>
@@ -41,7 +41,7 @@
 
     <div class="card mb-4">
         <div class="card-header flex flex-wrap items-center justify-between gap-2">
-            <h6 class="mb-0"><i class="bi bi-list-check text-primary-500 me-1"></i> Item PO</h6>
+            <h6 class="mb-0"><i class="bi bi-list-check text-primary-500 me-1"></i> Item SO</h6>
             <div class="flex items-center gap-2">
                 <span class="text-xs text-slate-400" x-text="itemCount()"></span>
                 <button type="button" class="btn btn-primary btn-sm rounded-full px-4 shadow-sm" @click="showModal = true">
@@ -108,9 +108,9 @@
                     </div>
                 </div>
                 <div class="flex gap-2 justify-end">
-                    <a href="{{ route('transaksi.purchases.index') }}" class="btn btn-outline-secondary rounded-full px-4">Batal</a>
+                    <a href="{{ route('transaksi.sales_orders.index') }}" class="btn btn-outline-secondary rounded-full px-4">Batal</a>
                     <button type="submit" class="btn btn-primary rounded-full px-5 shadow-md" :disabled="Object.keys(selectedItems).length === 0">
-                        <i class="bi bi-check-lg me-1"></i> Simpan PO
+                        <i class="bi bi-check-lg me-1"></i> Simpan SO
                     </button>
                 </div>
             </div>
@@ -122,7 +122,7 @@
 <div x-show="showModal" x-cloak class="fixed inset-0 z-50 overflow-hidden" @keydown.escape.window="showModal = false">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showModal = false"></div>
     <div class="absolute inset-4 sm:inset-x-10 sm:inset-y-8 bg-white rounded-2xl shadow-2xl flex flex-col" @click.stop>
-        <div class="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-t-2xl shrink-0">
+        <div class="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-t-2xl shrink-0">
             <h5 class="text-lg font-bold"><i class="bi bi-box-seam me-2"></i>Pilih Produk</h5>
             <div class="flex items-center gap-3">
                 <input type="text" x-model="searchQuery" @input="filterProducts()" class="form-input form-input-sm text-slate-700" placeholder="Cari nama / kode..." style="min-width:200px">
@@ -132,7 +132,7 @@
         <div class="overflow-y-auto p-3 flex-1">
                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
                         <template x-for="p in filteredProducts()" :key="p.id">
-                            <div class="border border-slate-200 rounded-xl p-2.5 cursor-pointer hover:border-primary-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                            <div class="border border-slate-200 rounded-xl p-2.5 cursor-pointer hover:border-rose-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
                                  @click="addProduct(p); $el.style.transform='scale(0.95)'; setTimeout(() => $el.style.transform='', 100)">
                                 <div class="w-full aspect-[4/3] rounded-lg bg-slate-100 flex items-center justify-center mb-2 overflow-hidden">
                                     <img :src="p.photo" class="w-full h-full object-cover" x-show="p.photo">
@@ -157,11 +157,11 @@
 @push('scripts')
 <script>
 document.addEventListener('alpine:init', () => {
-    Alpine.data('poForm', () => ({
+    Alpine.data('soForm', () => ({
         selectedItems: {},
         showModal: false,
         searchQuery: '',
-        products: {!! $products->map(fn($p) => ['id' => $p->id, 'name' => $p->name, 'code' => $p->code, 'price' => (float) $p->purchase_price, 'photo' => $p->photo ? asset('storage/'.$p->photo) : ''])->values()->toJson() !!},
+        products: {!! $products->map(fn($p) => ['id' => $p->id, 'name' => $p->name, 'code' => $p->code, 'price' => (float) $p->selling_price, 'photo' => $p->photo ? asset('storage/'.$p->photo) : ''])->values()->toJson() !!},
 
         itemCount() { let n = Object.keys(this.selectedItems).length; return n + ' item'; },
         subtotal() { return Object.values(this.selectedItems).reduce((s, it) => s + it.qty * it.price, 0); },
@@ -206,12 +206,12 @@ document.addEventListener('alpine:init', () => {
             else if (field === 'disc') it.discount = this.parseRupiah(val);
         },
 
-        renderHidden() { /* triggers reactivity */ },
+        renderHidden() { /* triggers Alpine re-render */ },
 
         handleSubmit(e) {
             if (Object.keys(this.selectedItems).length === 0) { showToast('Pilih minimal 1 produk', 'warning'); return; }
-            let supplier = document.querySelector('[name="supplier_id"]');
-            if (!supplier || !supplier.value) { showToast('Pilih supplier', 'warning'); return; }
+            let customer = document.querySelector('[name="customer_id"]');
+            if (!customer || !customer.value) { showToast('Pilih customer', 'warning'); return; }
             let form = e.target;
             form.querySelectorAll('input[name^="items["]').forEach(el => el.remove());
             let idx = 0;

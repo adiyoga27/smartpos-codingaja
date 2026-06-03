@@ -30,15 +30,15 @@ class StockMutationController extends Controller
             }
             $filtered = $query->count();
             $data = $query->skip($start)->take($length)->get()->map(function ($item) {
-                $stockBadge = $item->stock <= $item->min_stock ? '<span class="badge bg-danger">'.$item->stock.'</span>' : $item->stock;
+                $stockBadge = $item->stock <= $item->min_stock ? '<span class="badge bg-danger">'.formatQty($item->stock).'</span>' : formatQty($item->stock);
 
                 return [
                     $item->code,
                     $item->name,
                     $stockBadge,
-                    $item->min_stock,
-                    $item->total_in ?? 0,
-                    $item->total_out ?? 0,
+                    formatQty($item->min_stock),
+                    formatQty($item->total_in ?? 0),
+                    formatQty($item->total_out ?? 0),
                     '<a href="'.route('stok.mutations.show', $item).'" class="btn btn-sm btn-info"><i class="bi bi-eye"></i> Detail</a>',
                 ];
             });
@@ -75,9 +75,9 @@ class StockMutationController extends Controller
                 return [
                     $item->created_at->format('d/m/Y H:i'),
                     $typeBadge,
-                    $item->quantity,
-                    $item->stock_before,
-                    $item->stock_after,
+                    formatQty($item->quantity),
+                    formatQty($item->stock_before),
+                    formatQty($item->stock_after),
                     $item->notes ?? '-',
                     $item->creator?->name ?? '-',
                 ];

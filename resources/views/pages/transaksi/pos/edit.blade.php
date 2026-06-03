@@ -72,7 +72,7 @@
                         @foreach($sale->items as $item)
                         <tr>
                             <td>{{ $item->product?->name ?? '-' }}</td>
-                            <td class="text-center">{{ $item->quantity }}</td>
+                            <td class="text-center">{{ formatQty($item->quantity) }}</td>
                             <td>{{ formatRupiah($item->unit_price) }}</td>
                             <td>{{ formatRupiah($item->discount) }}</td>
                             <td class="text-right">{{ formatRupiah($item->total) }}</td>

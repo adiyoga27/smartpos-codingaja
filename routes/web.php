@@ -19,10 +19,12 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\Setting\CompanySettingController;
 use App\Http\Controllers\Stok\StockMutationController;
+use App\Http\Controllers\Transaksi\DeliveryOrderController;
 use App\Http\Controllers\Transaksi\PurchaseController;
 use App\Http\Controllers\Transaksi\PurchaseReturnController;
 use App\Http\Controllers\Transaksi\SaleController;
 use App\Http\Controllers\Transaksi\SaleReturnController;
+use App\Http\Controllers\Transaksi\SalesOrderController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -48,7 +50,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('transaksi')->name('transaksi.')->group(function () {
         Route::resource('purchases', PurchaseController::class);
         Route::patch('purchases/{purchase}/receive', [PurchaseController::class, 'receive'])->name('purchases.receive');
+        Route::get('purchases/{purchase}/print', [PurchaseController::class, 'print'])->name('purchases.print');
         Route::resource('purchase_returns', PurchaseReturnController::class);
+        Route::resource('sales_orders', SalesOrderController::class);
+        Route::post('sales_orders/{sales_order}/deliver', [SalesOrderController::class, 'deliver'])->name('sales_orders.deliver');
+        Route::get('sales_orders/{sales_order}/print', [SalesOrderController::class, 'print'])->name('sales_orders.print');
+        Route::resource('delivery_orders', DeliveryOrderController::class)->only(['index', 'show']);
+        Route::get('delivery_orders/{delivery_order}/print', [DeliveryOrderController::class, 'print'])->name('delivery_orders.print');
         Route::resource('sale_returns', SaleReturnController::class);
     });
 

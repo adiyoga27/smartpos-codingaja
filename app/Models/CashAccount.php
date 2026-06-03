@@ -11,7 +11,7 @@ class CashAccount extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'name', 'code', 'type', 'bank_name', 'account_number', 'opening_balance', 'current_balance', 'is_active', 'is_default',
+        'account_id', 'name', 'code', 'type', 'bank_name', 'account_number', 'opening_balance', 'current_balance', 'is_active', 'is_default',
     ];
 
     protected $casts = [
@@ -20,6 +20,11 @@ class CashAccount extends Model
         'opening_balance' => 'decimal:2',
         'current_balance' => 'decimal:2',
     ];
+
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
+    }
 
     public function transactions()
     {

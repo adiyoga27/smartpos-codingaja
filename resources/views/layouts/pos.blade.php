@@ -11,7 +11,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="h-full bg-slate-50 overflow-hidden"
+<body class="h-full bg-slate-50"
     x-data
     @if(session('success')) data-toast-success="{{ session('success') }}" @endif
     @if(session('error')) data-toast-error="{{ session('error') }}" @endif
@@ -43,6 +43,13 @@
             container.appendChild(toast);
             setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3000);
         }
+
+        (function() {
+            var body = document.body;
+            if (body.dataset.toastSuccess) showToast(body.dataset.toastSuccess, 'success');
+            if (body.dataset.toastError) showToast(body.dataset.toastError, 'error');
+            if (body.dataset.toastWarning) showToast(body.dataset.toastWarning, 'warning');
+        })();
     </script>
     @livewireScripts
     @stack('scripts')

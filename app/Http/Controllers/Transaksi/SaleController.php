@@ -194,6 +194,10 @@ class SaleController extends Controller
             }
         });
 
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Transaksi berhasil disimpan.', 'sale_id' => $sale->id]);
+        }
+
         return redirect()->route('pos.kasir')->with('success', 'Transaksi berhasil disimpan.')->with('last_sale_id', $sale->id);
     }
 
@@ -349,5 +353,29 @@ class SaleController extends Controller
             });
 
         return response()->json($sales);
+    }
+
+    public function customerQuickStore(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:30',
+            'type' => 'in:retail,wholesale',
+        ]);
+
+        $count = Customer::withTrashed()->count() + 1;
+        $customer = Customer::create([
+            'code' => 'CUS'.str_pad((string) $count, 3, '0', STR_PAD_LEFT),
+            'name' => $validated['name'],
+            'phone' => $validated['phone'] ?? null,
+            'type' => $validated['type'] ?? 'retail',
+            'opening_balance' => 0,
+            'current_balance' => 0,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'customer' => ['id' => $customer->id, 'name' => $customer->name, 'code' => $customer->code],
+        ]);
     }
 }

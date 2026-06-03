@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Keuangan;
 
 use App\Http\Controllers\Controller;
+use App\Models\Account;
 use App\Models\CashAccount;
 use Illuminate\Http\Request;
 
@@ -36,6 +37,7 @@ class CashAccountController extends Controller
                     $item->code,
                     $item->name.$defaultBadge,
                     $typeLabel,
+                    $item->account?->code ?? '-',
                     $item->bank_name ?? '-',
                     $item->account_number ?? '-',
                     formatRupiah($item->current_balance),
@@ -52,7 +54,9 @@ class CashAccountController extends Controller
 
     public function create()
     {
-        return view('pages.keuangan.cash_accounts.create');
+        $coaAccounts = Account::active()->where('type', 'asset')->get();
+
+        return view('pages.keuangan.cash_accounts.create', compact('coaAccounts'));
     }
 
     public function store(Request $request)
@@ -65,6 +69,23 @@ class CashAccountController extends Controller
             'account_number' => 'nullable|string|max:255',
             'opening_balance' => 'nullable|numeric|min:0',
         ]);
+
+        $accountId = $request->input('account_id');
+        if (! $accountId) {
+            $count = Account::withTrashed()->count() + 1;
+            $coaCode = $request->type === 'cash' ? '1-100'.str_pad((string) $count, 2, '0', STR_PAD_LEFT) : '1-110'.str_pad((string) $count, 2, '0', STR_PAD_LEFT);
+            $account = Account::create([
+                'code' => $coaCode,
+                'name' => $validated['name'],
+                'type' => 'asset',
+                'normal_balance' => 'debit',
+                'opening_balance' => $validated['opening_balance'] ?? 0,
+                'is_active' => true,
+            ]);
+            $accountId = $account->id;
+        }
+
+        $validated['account_id'] = $accountId;
         $validated['current_balance'] = $validated['opening_balance'] ?? 0;
         $validated['is_default'] = $request->boolean('is_default');
         if ($validated['is_default']) {
@@ -77,7 +98,9 @@ class CashAccountController extends Controller
 
     public function edit(CashAccount $cashAccount)
     {
-        return view('pages.keuangan.cash_accounts.edit', compact('cashAccount'));
+        $coaAccounts = Account::active()->where('type', 'asset')->get();
+
+        return view('pages.keuangan.cash_accounts.edit', compact('cashAccount', 'coaAccounts'));
     }
 
     public function update(Request $request, CashAccount $cashAccount)

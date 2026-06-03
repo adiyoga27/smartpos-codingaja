@@ -11,63 +11,35 @@
             <span class="font-bold text-slate-700 hidden sm:inline">POS Kasir</span>
         </div>
         <div class="flex items-center gap-3">
-            <div class="relative" x-data="{ custOpen: false, custSearch: '', selectedCust: null, custShowAll: false }" @click.outside="custOpen = false; custShowAll = false">
-                <div class="flex items-center gap-1">
-                    <i class="bi bi-person text-slate-400 text-sm"></i>
-                    <input type="text"
-                           x-model="custSearch"
-                           @input="custOpen = true; custShowAll = false"
-                           @focus="custOpen = true"
-                           class="text-xs border-b border-slate-200 bg-transparent py-1 px-1 w-36 outline-none focus:border-primary-500"
-                           placeholder="Walk-in..."
-                           autocomplete="off">
-                    <input type="hidden" name="customer_id" :value="selectedCust ? selectedCust.id : ''">
-                    <button type="button" @click="custOpen = !custOpen; custShowAll = !custShowAll; custSearch = ''" class="text-slate-400 hover:text-slate-600 p-0.5" title="Lihat Semua Customer">
-                        <i class="bi bi-chevron-down text-xs" :class="custShowAll && 'rotate-180'"></i>
-                    </button>
-                    <button type="button" @click="$dispatch('open-customer-modal')" class="text-primary-600 hover:text-primary-800 p-0.5" title="Kelola Customer">
-                        <i class="bi bi-plus-circle-fill text-sm"></i>
-                    </button>
-                </div>
-                <div x-show="custOpen && (custSearch.length >= 1 || custShowAll)" x-cloak x-transition.opacity
-                     class="absolute z-30 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg w-64 max-h-48 overflow-y-auto">
-                    <template x-for="c in custShowAll ? allCustomers : searchCustomers(custSearch)" :key="c.id">
-                        <div @click="selectedCust=c; custSearch=c.name; custOpen=false"
-                             class="px-3 py-2 text-sm hover:bg-primary-50 cursor-pointer flex items-center justify-between">
-                            <span>
-                                <span class="font-medium" x-text="c.name"></span>
-                                <span class="text-slate-400 ml-1 text-xs" x-text="'['+c.code+']'"></span>
-                            </span>
-                        </div>
-                    </template>
-                    <div x-show="!custShowAll && searchCustomers(custSearch).length === 0"
-                         class="px-3 py-2 text-sm text-slate-400 text-center">Tidak ditemukan</div>
-                </div>
-            </div>
             <span class="text-xs text-slate-400 hidden lg:inline">
                 <i class="bi bi-calendar3 mr-1"></i> <span id="headerDateTime">{{ now()->isoFormat('dddd, D MMMM Y HH:mm') }}</span>
             </span>
+            <div class="flex items-center gap-1.5">
+                <i class="bi bi-printer text-slate-400 text-sm"></i>
+                <select x-model="printerType" class="form-select form-select-sm text-xs" style="min-width:130px" x-effect="localStorage.setItem('posPrinter', printerType)">
+                    <option value="a4">Kertas A4</option>
+                    <option value="thermal">Thermal 58mm</option>
+                    <option value="none">Tanpa Cetak</option>
+                </select>
+            </div>
             <button type="button" @click="historyModal=true; loadHistory()" class="btn btn-secondary btn-sm">
                 <i class="bi bi-clock-history"></i> Riwayat
             </button>
         </div>
     </div>
 
-    <!-- Main POS content -->
-    <div class="flex-1 flex flex-col lg:flex-row gap-3 p-3 min-h-0">
-    <!-- LEFT: Product Grid -->
-    <div class="flex-1 lg:w-[55%] min-w-0 flex flex-col">
+    <!-- Main content: full-width product area -->
+    <div class="flex-1 flex flex-col p-3 min-h-0">
+        <!-- Search & filters -->
         <div class="flex gap-2 mb-3">
             <div class="relative flex-1">
                 <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input type="text" x-model="searchProduct" @input.debounce.100ms="filterProducts()"
                        class="form-input pl-10" placeholder="Cari produk (nama / kode / barcode)...">
             </div>
-            <button type="button" @click="historyModal=true; loadHistory()" class="btn btn-secondary btn-sm whitespace-nowrap">
-                <i class="bi bi-clock-history"></i> <span class="hidden sm:inline">Riwayat</span>
-            </button>
         </div>
 
+        <!-- Category pills -->
         <div class="flex gap-1.5 mb-3 overflow-x-auto pb-1" x-data="{ activeCat: 'all' }">
             <button @click="activeCat='all'; filterByCategory('all')"
                     :class="activeCat==='all' ? 'bg-primary-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
@@ -83,8 +55,9 @@
             @endforeach
         </div>
 
+        <!-- Product grid -->
         <div class="flex-1 overflow-y-auto rounded-xl">
-            <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3" id="productGrid">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3" id="productGrid">
                 @foreach($products as $product)
                 <div class="product-card-item"
                      data-name="{{ strtolower($product->name) }}"
@@ -132,22 +105,36 @@
         </div>
     </div>
 
-    <!-- RIGHT: Cart -->
-    <div class="w-full lg:w-[45%] lg:min-w-[480px] shrink-0 flex flex-col">
-        <form action="{{ route('transaksi.sales.store') }}" method="POST" id="posForm" data-noloading="true" class="flex flex-col h-full">
-            @csrf
-            <div class="card flex flex-col h-full">
-                <div class="card-header flex items-center justify-between bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-t-xl shrink-0">
-                    <div class="flex items-center gap-2">
-                        <i class="bi bi-cart3 text-lg"></i>
-                        <span class="font-bold">Keranjang</span>
-                    </div>
-                    <span class="bg-white/20 text-white text-xs px-2 py-1 rounded-full" x-text="cart.length + ' item'"></span>
-                </div>
+    <!-- Floating Cart Button -->
+    <button type="button" @click="cartModal = true"
+            class="fixed bottom-6 right-6 z-40 w-14 h-14 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center"
+            x-show="!cartModal">
+        <i class="bi bi-cart3 text-2xl"></i>
+        <span x-show="cart.length > 0" x-text="cart.length"
+              class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center"></span>
+    </button>
 
+    <!-- Cart Modal (fullscreen) -->
+    <div x-show="cartModal" x-cloak x-transition.opacity class="fixed inset-0 z-50 flex bg-white"
+         @click.self="cartModal = false" @keydown.escape.window="cartModal = false">
+        <div class="w-full h-full flex flex-col" @click.stop>
+            <!-- Modal header -->
+            <div class="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white shrink-0">
+                <div class="flex items-center gap-2">
+                    <i class="bi bi-cart3 text-lg"></i>
+                    <span class="font-bold">Keranjang</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="bg-white/20 text-white text-xs px-2 py-1 rounded-full" x-text="cart.length + ' item'"></span>
+                    <button @click="cartModal = false" class="text-white/80 hover:text-white"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+
+            <form action="{{ route('transaksi.sales.store') }}" method="POST" id="posForm" data-noloading="true" class="flex flex-col flex-1 min-h-0">
+                @csrf
                 <div class="overflow-y-auto flex-1 p-0">
                     <table class="table mb-0 w-full" id="cartTable">
-                        <thead class="sticky top-0 z-10">
+                        <thead class="sticky top-0 z-10 bg-slate-50">
                             <tr>
                                 <th class="text-[11px]">Produk</th>
                                 <th class="text-[11px]">Qty</th>
@@ -166,9 +153,76 @@
                     </div>
                 </div>
 
-                <div class="border-t border-slate-100 bg-slate-50/50 px-4 py-3 space-y-2.5 shrink-0">
+                <div class="border-t border-slate-200 bg-slate-50/50 px-4 py-3 space-y-2.5 shrink-0">
                     <input type="hidden" name="invoice_number" value="{{ $invoiceNumber }}">
                     <input type="hidden" name="sale_date" value="{{ now()->format('Y-m-d') }}">
+
+                    <div class="relative">
+                        <label class="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Customer</label>
+                        <div class="flex items-center gap-1 mt-1">
+                            <i class="bi bi-person text-slate-400 text-sm"></i>
+                            <input type="text"
+                                   x-model="custSearch"
+                                   @input="custOpen = true; custShowAll = false"
+                                   @focus="custOpen = true"
+                                   @click.outside="custOpen = false; custShowAll = false"
+                                   class="form-input form-input-sm text-sm flex-1"
+                                   placeholder="Walk-in..."
+                                   autocomplete="off">
+                            <input type="hidden" name="customer_id" :value="selectedCust ? selectedCust.id : ''">
+                            <button type="button" @click="custOpen = !custOpen; custShowAll = !custShowAll; custSearch = ''" class="text-slate-400 hover:text-slate-600 p-0.5" title="Semua Customer">
+                                <i class="bi bi-chevron-down text-xs" :class="custShowAll && 'rotate-180'"></i>
+                            </button>
+                            <button type="button" @click="customerModal = true; customerForm = { name: '', phone: '', type: 'retail' }" class="btn btn-sm btn-outline-primary p-0 w-7 h-7 flex items-center justify-center" title="Tambah Customer">
+                                <i class="bi bi-plus text-sm"></i>
+                            </button>
+                        </div>
+                        <div x-show="custOpen && (custSearch.length >= 1 || custShowAll)" x-cloak x-transition.opacity
+                             class="absolute z-30 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                            <template x-for="c in custShowAll ? allCustomers : searchCustomers(custSearch)" :key="c.id">
+                                <div @click="selectedCust=c; custSearch=c.name; custOpen=false"
+                                     class="px-3 py-2 text-sm hover:bg-primary-50 cursor-pointer flex items-center justify-between">
+                                    <span>
+                                        <span class="font-medium" x-text="c.name"></span>
+                                        <span class="text-slate-400 ml-1 text-xs" x-text="'['+c.code+']'"></span>
+                                    </span>
+                                </div>
+                            </template>
+                            <div x-show="!custShowAll && searchCustomers(custSearch).length === 0"
+                                 class="px-3 py-2 text-sm text-slate-400 text-center">Tidak ditemukan</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Customer</label>
+                        <div class="relative" @click.outside="custOpen = false; custShowAll = false">
+                            <div class="flex items-center gap-1 mt-1">
+                                <input type="text" x-model="custSearch"
+                                       @input="custOpen = true; custShowAll = false"
+                                       @focus="custOpen = true"
+                                       class="form-input form-input-sm text-sm" placeholder="Walk-in / Umum..." autocomplete="off">
+                                <input type="hidden" name="customer_id" :value="selectedCust ? selectedCust.id : ''">
+                                <button type="button" @click="custOpen = !custOpen; custShowAll = !custShowAll; custSearch = ''" class="btn btn-sm btn-outline-secondary p-1 w-7 h-7 flex items-center justify-center" title="Semua Customer">
+                                    <i class="bi bi-chevron-down text-xs" :class="custShowAll && 'rotate-180'"></i>
+                                </button>
+                                <button type="button" @click="customerModal = true; customerForm = { name: '', phone: '', type: 'retail' }" class="btn btn-sm btn-outline-primary p-1 w-7 h-7 flex items-center justify-center" title="Tambah Customer">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                            <div x-show="custOpen && (custSearch.length >= 1 || custShowAll)" x-cloak x-transition.opacity
+                                 class="absolute z-30 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                                <template x-for="c in custShowAll ? allCustomers : searchCustomers(custSearch)" :key="c.id">
+                                    <div @click="selectedCust=c; custSearch=c.name; custOpen=false"
+                                         class="px-3 py-2 text-sm hover:bg-primary-50 cursor-pointer flex items-center justify-between">
+                                        <span class="font-medium" x-text="c.name"></span>
+                                        <span class="text-slate-400 text-xs" x-text="'['+c.code+']'"></span>
+                                    </div>
+                                </template>
+                                <div x-show="!custShowAll && searchCustomers(custSearch).length === 0"
+                                     class="px-3 py-2 text-sm text-slate-400 text-center">Tidak ditemukan</div>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="grid grid-cols-2 gap-2">
                         <div>
@@ -190,7 +244,17 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2" id="cashPanel">
+                    <div id="accountPanel" style="display:none;">
+                        <label class="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Kas / Bank Tujuan</label>
+                        <select name="cash_account_id" class="form-select text-sm mt-1">
+                            @foreach($cashAccounts as $ca)
+                            <option value="{{ $ca->id }}" {{ $ca->is_default ? 'selected' : '' }}>{{ $ca->name }} ({{ formatRupiah($ca->current_balance) }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <input type="hidden" name="total_discount" id="totalAddDisc" value="0">
+
+                    <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Diskon Tambahan</label>
                             <input type="number" x-model.number="additionalDiscount" class="form-input text-sm font-mono" value="0"
@@ -239,407 +303,423 @@
                     <input type="hidden" name="total_discount" id="totalAddDisc" value="0">
 
                     <div class="grid grid-cols-2 gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg" id="btnPay" disabled>
-                            <i class="bi bi-cash-coin text-lg"></i> Bayar
+                        <button type="button" class="btn btn-primary btn-lg" id="btnPay" disabled
+                                @click="handleCheckout()" :disabled="cart.length === 0 || loading">
+                            <span x-show="!loading"><i class="bi bi-cash-coin text-lg"></i> <span x-text="btnPayLabel"></span></span>
+                            <span x-show="loading" class="flex items-center gap-2">
+                                <span class="spinner-border spinner-border-sm"></span> Memproses...
+                            </span>
                         </button>
-                        <button type="button" class="btn btn-danger btn-sm" @click="clearCart()" x-show="cart.length > 0">
+                        <button type="button" class="btn btn-outline-danger btn-sm" @click="clearCart()" x-show="cart.length > 0">
                             <i class="bi bi-trash"></i> Kosongkan
                         </button>
                     </div>
                 </div>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Customer Modal -->
-<div x-show="customerModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" @click.self="customerModal=false" @keydown.escape.window="customerModal=false">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div class="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-4 text-white flex items-center justify-between">
-            <span class="font-bold">Tambah Customer</span>
-            <button @click="customerModal=false" class="text-white/80 hover:text-white"><i class="bi bi-x-lg"></i></button>
-        </div>
-        <div class="p-5 space-y-3">
-            <div>
-                <label class="form-label text-sm">Nama <span class="text-red-500">*</span></label>
-                <input type="text" x-model="customerForm.name" class="form-input text-sm" placeholder="Nama customer">
-            </div>
-            <div>
-                <label class="form-label text-sm">No. Telepon</label>
-                <input type="text" x-model="customerForm.phone" class="form-input text-sm" placeholder="0812...">
-            </div>
-            <div>
-                <label class="form-label text-sm">Tipe</label>
-                <select x-model="customerForm.type" class="form-select text-sm">
-                    <option value="retail">Retail</option>
-                    <option value="wholesale">Grosir</option>
-                </select>
-            </div>
-            <button type="button" @click="saveCustomer()" :disabled="customerFormLoading || !customerForm.name.trim()"
-                    class="btn btn-primary btn-md w-full">
-                <i class="bi bi-check-lg mr-1"></i> <span x-text="customerFormLoading ? 'Menyimpan...' : 'Simpan Customer'"></span>
-            </button>
+            </form>
         </div>
     </div>
-</div>
 
-<!-- History Modal -->
-<div x-show="historyModal" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm" @click.self="historyModal=false" @keydown.escape.window="historyModal=false">
-    <div class="bg-white sm:rounded-2xl shadow-2xl w-full sm:max-w-xl max-h-[85vh] sm:max-h-[80vh] flex flex-col overflow-hidden rounded-t-2xl sm:rounded-2xl animate-slide-up">
-        <div class="bg-white px-5 py-4 flex items-center justify-between shrink-0 border-b border-slate-100">
-            <div>
-                <h3 class="font-bold text-slate-800 text-lg">Riwayat Transaksi</h3>
-                <p class="text-xs text-slate-400 mt-0.5">20 transaksi terakhir</p>
+    <!-- Customer Modal -->
+    <div x-show="customerModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" @click.self="customerModal=false" @keydown.escape.window="customerModal=false">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-4 text-white flex items-center justify-between">
+                <span class="font-bold">Tambah Customer</span>
+                <button @click="customerModal=false" class="text-white/80 hover:text-white"><i class="bi bi-x-lg"></i></button>
             </div>
-            <button @click="historyModal=false" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
-                <i class="bi bi-x-lg text-slate-500 text-sm"></i>
-            </button>
-        </div>
-
-        <div class="overflow-y-auto flex-1 px-4 py-2">
-            <div x-show="historyLoading" class="py-12 text-center">
-                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary-50 mb-3">
-                    <i class="bi bi-arrow-repeat animate-spin text-2xl text-primary-500"></i>
+            <div class="p-5 space-y-3">
+                <div>
+                    <label class="form-label text-sm">Nama <span class="text-red-500">*</span></label>
+                    <input type="text" x-model="customerForm.name" class="form-input text-sm" placeholder="Nama customer">
                 </div>
-                <p class="text-sm text-slate-400">Memuat transaksi...</p>
-            </div>
-
-            <div x-show="!historyLoading && historyList.length === 0" class="py-12 text-center">
-                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 mb-3">
-                    <i class="bi bi-receipt text-2xl text-slate-300"></i>
+                <div>
+                    <label class="form-label text-sm">No. Telepon</label>
+                    <input type="text" x-model="customerForm.phone" class="form-input text-sm" placeholder="0812...">
                 </div>
-                <p class="text-sm text-slate-400">Belum ada transaksi</p>
+                <div>
+                    <label class="form-label text-sm">Tipe</label>
+                    <select x-model="customerForm.type" class="form-select text-sm">
+                        <option value="retail">Retail</option>
+                        <option value="wholesale">Grosir</option>
+                    </select>
+                </div>
+                <button type="button" @click="saveCustomer()" :disabled="customerFormLoading || !customerForm.name.trim()"
+                        class="btn btn-primary btn-md w-full">
+                    <i class="bi bi-check-lg mr-1"></i> <span x-text="customerFormLoading ? 'Menyimpan...' : 'Simpan Customer'"></span>
+                </button>
             </div>
+        </div>
+    </div>
 
-            <div class="space-y-2 pb-2">
-                <template x-for="s in historyList" :key="s.id">
-                    <div class="bg-slate-50 hover:bg-slate-100 rounded-xl p-4 transition-colors">
-                        <div class="flex items-start justify-between gap-3 mb-2">
-                            <div class="min-w-0">
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="text-sm font-semibold text-slate-800 truncate" x-text="s.invoice"></span>
-                                    <span class="text-[11px] px-2 py-0.5 rounded-full font-semibold shrink-0"
-                                          :class="s.status==='paid'?'bg-emerald-100 text-emerald-700':(s.status==='partial'?'bg-amber-100 text-amber-700':'bg-red-100 text-red-700')"
-                                          x-text="s.status==='paid'?'Lunas':(s.status==='partial'?'Sebagian':'Belum Bayar')"></span>
-                                </div>
-                                <div class="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                                    <span x-text="s.date"></span>
-                                    <span class="text-slate-300">·</span>
-                                    <span class="px-2 py-0.5 bg-white rounded-md border border-slate-200 text-[11px] font-medium" x-text="s.method"></span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-xs text-slate-500 truncate" x-text="s.customer"></p>
-                                <p class="text-lg font-bold text-slate-800 mt-0.5" x-text="s.total"></p>
-                            </div>
-                            <div class="flex items-center gap-1.5">
-                                <a :href="s.print_a4" target="_blank"
-                                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-primary-50 hover:border-primary-200 hover:text-primary-600 transition-colors">
-                                    <i class="bi bi-printer"></i> A4
-                                </a>
-                                <a :href="s.print_thermal" target="_blank"
-                                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-primary-50 hover:border-primary-200 hover:text-primary-600 transition-colors">
-                                    <i class="bi bi-receipt"></i> Thermal
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </template>
+    <!-- History Modal -->
+    <div x-show="historyModal" x-cloak class="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/40 backdrop-blur-sm pt-4 sm:pt-0" @click.self="historyModal=false" @keydown.escape.window="historyModal=false">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden mx-4">
+            <div class="bg-gradient-to-r from-slate-700 to-slate-800 px-6 py-4 text-white flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2">
+                    <i class="bi bi-clock-history text-lg"></i>
+                    <span class="font-bold">Riwayat Transaksi</span>
+                </div>
+                <button @click="historyModal=false" class="text-white/80 hover:text-white"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="overflow-y-auto p-5 flex-1 space-y-2" id="historyList">
+                <div class="text-center py-8 text-slate-400">
+                    <span class="loading loading-spinner loading-sm"></span> Memuat riwayat...
+                </div>
             </div>
         </div>
     </div>
 </div>
-</div>
-
-<!-- Print Modal -->
-@if(session('last_sale_id'))
-<div x-data="{ open: true }" x-show="open" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" x-cloak>
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" @click.outside="open=false">
-        <div class="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-4 text-white text-center">
-            <i class="bi bi-check-circle-fill text-4xl block mb-2"></i>
-            <p class="font-bold text-lg">Transaksi Berhasil!</p>
-            <p class="text-sm text-blue-100">Pilih opsi cetak</p>
-        </div>
-        <div class="p-5 space-y-3">
-            <a href="{{ route('pos.print-a4', session('last_sale_id')) }}" target="_blank"
-               class="btn btn-primary btn-md w-full">
-                <i class="bi bi-printer"></i> Cetak A4
-            </a>
-            <a href="{{ route('pos.print-thermal', session('last_sale_id')) }}" target="_blank"
-               class="btn btn-secondary btn-md w-full">
-                <i class="bi bi-receipt"></i> Cetak Thermal Printer
-            </a>
-            <button @click="open=false" class="btn btn-secondary btn-sm w-full">
-                <i class="bi bi-x-lg"></i> Tutup
-            </button>
-        </div>
-    </div>
-</div>
-@endif
-
-<style>
-@keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
-.animate-slide-up { animation: slide-up 0.3s ease-out; }
-@media (min-width: 640px) { .animate-slide-up { animation: none; } }
-</style>
-
 @push('scripts')
+@php
+$customersJson = $customers->map(function($c) { return ['id' => $c->id, 'name' => $c->name, 'code' => $c->code]; })->values()->toJson();
+@endphp
 <script>
-document.addEventListener('alpine:init', () => {
-    Alpine.data('posKasir', () => ({
+document.addEventListener('DOMContentLoaded', function() {
+    updateDateTime();
+    setInterval(updateDateTime, 30000);
+});
+
+function updateDateTime() {
+    let el = document.getElementById('headerDateTime');
+    if (!el) return;
+    let d = new Date();
+    let days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    let months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    el.textContent = days[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear() + ' ' +
+        String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+function posKasir() {
+    return {
         cart: [],
-        searchProduct: '',
+            searchProduct: '',
+            customerModal: false,
+            cartModal: false,
+            historyModal: false,
+            customerFormLoading: false,
+            loading: false,
+            btnPayLabel: 'Bayar',
+            printerType: localStorage.getItem('posPrinter') || 'a4',
+            customerForm: { name: '', phone: '', type: 'retail' },
+            selectedCust: null,
+            custSearch: '',
+            custOpen: false,
+            custShowAll: false,
+            additionalDiscount: 0,
+        allCustomers: {!! $customersJson !!},
         filteredCount: {{ $products->count() }},
-        allCustomers: @json($customers->map(fn($c) => ['id' => $c->id, 'code' => $c->code, 'name' => $c->name])),
-        customerModal: false,
-        customerForm: { name: '', phone: '', type: 'retail' },
-        customerFormLoading: false,
-        additionalDiscount: 0,
-        historyModal: false,
-        historyList: [],
-        historyLoading: false,
 
-        init() {
-            let self = this;
-            window.posApp = this;
-            this.$watch('cart', () => {
-                let empty = document.getElementById('emptyCart');
-                if (empty) empty.style.display = self.cart.length ? 'none' : 'flex';
-                self.updateTotals();
-            });
-        },
-
-        async saveCustomer() {
-            if (!this.customerForm.name.trim()) return;
-            this.customerFormLoading = true;
-            try {
-                let res = await fetch('{{ route('pos.customer-quick') }}', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-                    body: JSON.stringify(this.customerForm)
-                });
-                let data = await res.json();
-                if (data.success) {
-                    this.allCustomers.push(data.customer);
-                    this.customerModal = false;
-                    showToast('Customer berhasil ditambahkan', 'success');
-                }
-            } catch(e) {
-                showToast('Gagal menambah customer', 'error');
-            }
-            this.customerFormLoading = false;
-        },
-
-        async loadHistory() {
-            this.historyLoading = true;
-            try {
-                let res = await fetch('{{ route('pos.recent') }}', { headers: { 'Accept': 'application/json' } });
-                this.historyList = await res.json();
-            } catch(e) {
-                this.historyList = [];
-            }
-            this.historyLoading = false;
-        },
-
-        formatRupiah(angka) {
-            let n = parseFloat(angka);
-            if (isNaN(n)) n = 0;
-            return 'Rp ' + n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-        },
-
-        searchCustomers(query) {
-            if (!query || query.length < 1) return [];
-            const q = query.toLowerCase();
-            return this.allCustomers.filter(c =>
-                c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
-            ).slice(0, 10);
-        },
-
-        addToCart(id, name, price, stock) {
-            if (stock <= 0) { showToast('Stok habis!', 'error'); return; }
-            let existing = this.cart.find(c => c.id === id);
-            if (existing) {
-                if (existing.qty + 1 > stock) { showToast('Stok tidak cukup!', 'warning'); return; }
-                existing.qty += 1;
-            } else {
-                this.cart.push({id, name, price, stock, qty: 1, discount: 0});
-            }
-            this.renderCart();
-        },
-
-        removeCart(idx) { this.cart.splice(idx, 1); this.renderCart(); },
-        clearCart() { if (confirm('Kosongkan semua item?')) { this.cart = []; this.additionalDiscount = 0; this.renderCart(); } },
-
-        renderCart() {
-            let tbody = document.querySelector('#cartTable tbody');
-            tbody.innerHTML = '';
-            let subtotal = 0, discount = 0;
-            this.cart.forEach((item, idx) => {
-                let total = Math.max(0, item.qty * item.price - item.discount);
-                subtotal += item.qty * item.price;
-                discount += item.discount;
-                let fmtPrice = item.price.toLocaleString('id-ID');
-                let fmtDisc = item.discount.toLocaleString('id-ID');
-                tbody.innerHTML += `<tr class="text-sm">
-                    <td class="py-2.5"><input type="hidden" name="items[${idx}][product_id]" value="${item.id}"><span class="text-xs leading-tight line-clamp-2">${item.name}</span></td>
-                    <td class="py-2.5"><input type="number" class="form-input text-xs py-1 px-1 text-center qty-input" data-idx="${idx}" value="${item.qty}" min="1" max="${item.stock}" name="items[${idx}][quantity]"></td>
-                    <td class="py-2.5"><input type="text" class="form-input text-xs py-1 px-1 price-input" data-idx="${idx}" value="${fmtPrice}" inputmode="numeric" name="items[${idx}][unit_price]"></td>
-                    <td class="py-2.5"><input type="text" class="form-input text-xs py-1 px-1 disc-input" data-idx="${idx}" value="${fmtDisc}" inputmode="numeric" name="items[${idx}][discount]"></td>
-                    <td class="py-2.5 text-right text-xs font-semibold whitespace-nowrap">${this.formatRupiah(total)}</td>
-                    <td class="py-2.5 w-0"><button type="button" class="text-red-400 hover:text-red-600 p-0.5" @click="removeCart(${idx})"><i class="bi bi-x-circle"></i></button></td>
-                </tr>`;
-            });
-            document.getElementById('emptyCart').style.display = this.cart.length ? 'none' : 'flex';
-            this.updateTotals();
-        },
-
-        recalcTax() { this.updateTotals(); },
-
-        recalcTaxDisplay(taxable) {
-            let sel = document.getElementById('taxSelect');
-            let rate = 0;
-            if (sel && sel.selectedIndex > 0) {
-                let opt = sel.options[sel.selectedIndex];
-                rate = parseFloat(opt.dataset.rate) || 0;
-            }
-            this._taxAmount = Math.round(taxable * rate / 100);
-            document.getElementById('taxLabel').textContent = rate + '%';
-            document.getElementById('cartTax').textContent = this.formatRupiah(this._taxAmount);
-        },
-
-        updateChange() {
-            let total = parseInt(document.getElementById('cartTotal').textContent.replace(/\D/g, ''), 10) || 0;
-            let paidEl = document.getElementById('paidAmount');
-            let paid = parseInt((paidEl.value || '').replace(/\D/g, ''), 10) || 0;
-            document.getElementById('changeAmount').textContent = this.formatRupiah(Math.max(0, paid - total));
-        },
-
-        updateTotals() {
-            let subtotal = 0, itemDisc = 0;
-            let rows = document.querySelectorAll('#cartTable tbody tr');
-            this.cart.forEach((item, idx) => {
-                let rowTotal = Math.max(0, item.qty * item.price - item.discount);
-                subtotal += item.qty * item.price;
-                itemDisc += item.discount;
-                if (rows[idx]) {
-                    let td = rows[idx].querySelector('td:nth-child(5)');
-                    if (td) td.textContent = this.formatRupiah(rowTotal);
-                }
-            });
-            let addDisc = parseInt((this.additionalDiscount || '').toString().replace(/\D/g, ''), 10) || 0;
-            let taxable = Math.max(0, subtotal - itemDisc);
-            this.recalcTaxDisplay(taxable);
-            let total = taxable + (this._taxAmount || 0) - addDisc;
-            let el;
-            el = document.getElementById('cartSubtotal'); if (el) el.textContent = this.formatRupiah(subtotal);
-            el = document.getElementById('cartDiscount'); if (el) { el.textContent = this.formatRupiah(itemDisc); el.parentElement.style.display = itemDisc > 0 ? '' : 'none'; }
-            el = document.getElementById('cartAddDisc'); if (el) { el.textContent = this.formatRupiah(addDisc); el.parentElement.style.display = addDisc > 0 ? '' : 'none'; }
-            el = document.getElementById('cartTotal'); if (el) el.textContent = this.formatRupiah(Math.max(0, total));
-            el = document.getElementById('totalAddDisc'); if (el) el.value = addDisc;
-            el = document.getElementById('btnPay'); if (el) el.disabled = this.cart.length === 0;
-            this.updateChange();
-        },
-
-        _taxAmount: 0,
-
-        filterProducts() {
-            let val = this.searchProduct.toLowerCase();
-            let count = 0;
-            document.querySelectorAll('#productGrid .product-card-item').forEach(card => {
-                let name = card.dataset.name, code = card.dataset.code, barcode = card.dataset.barcode;
-                let show = !val || name.includes(val) || code.includes(val) || barcode.includes(val);
-                card.style.display = show ? '' : 'none';
-                if (show) count++;
-            });
-            this.filteredCount = count;
-        },
-
-        filterByCategory(catId) {
-            document.querySelectorAll('#productGrid .product-card-item').forEach(card => {
-                card.style.display = (catId === 'all' || card.dataset.category === catId) ? '' : 'none';
-            });
-        },
-    }));
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-    let table = document.getElementById('cartTable');
-    if (table) {
-        table.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
-        });
-        table.addEventListener('input', function(e) {
-            let el = e.target;
-            let idx = parseInt(el.dataset.idx);
-            if (!window.posApp) return;
-            let cart = window.posApp.cart;
-            if (!cart || idx >= cart.length) return;
-            if (el.classList.contains('qty-input')) cart[idx].qty = parseFloat(el.value) || 1;
-            if (el.classList.contains('price-input')) cart[idx].price = parseInt((el.value || '').replace(/\D/g, ''), 10) || 0;
-            if (el.classList.contains('disc-input')) cart[idx].discount = parseInt((el.value || '').replace(/\D/g, ''), 10) || 0;
-            window.posApp.updateTotals();
-        });
-        table.addEventListener('focusin', function(e) {
-            let el = e.target;
-            if (el.classList.contains('price-input') || el.classList.contains('disc-input')) {
-                el.value = (el.value || '').replace(/\D/g, '');
-            }
-        });
-        table.addEventListener('focusout', function(e) {
-            let el = e.target;
-            if (el.classList.contains('price-input') || el.classList.contains('disc-input')) {
-                let raw = parseInt((el.value || '').replace(/\D/g, ''), 10) || 0;
-                el.value = raw.toLocaleString('id-ID');
-            }
-        });
-    }
-
-    let paid = document.getElementById('paidAmount');
-    if (paid) {
-        paid.addEventListener('keydown', function(e) { if (e.key === 'Enter') e.preventDefault(); });
-    }
-
-    let pm = document.getElementById('paymentMethod');
-    if (pm) {
-        pm.addEventListener('change', function() {
-            let selected = this.options[this.selectedIndex];
-            let isCredit = selected && selected.dataset.credit === '1';
-            let cash = document.getElementById('cashPanel');
-            let changeRow = document.getElementById('changeRow');
-            if (cash) cash.style.display = isCredit ? 'none' : '';
-            if (changeRow) changeRow.style.display = isCredit ? 'none' : '';
-        });
-        pm.dispatchEvent(new Event('change'));
-    }
-
-    let form = document.getElementById('posForm');
-    if (form) {
-        form.addEventListener('keydown', function(e) { if (e.key === 'Enter') e.preventDefault(); });
-        form.addEventListener('submit', function(e) {
-            let pm = document.getElementById('paymentMethod');
-            if (pm) {
-                let selected = pm.options[pm.selectedIndex];
-                let isCredit = selected && selected.dataset.credit === '1';
-                if (isCredit) {
-                    let custInput = document.querySelector('input[name="customer_id"]');
-                    let custId = custInput ? custInput.value : '';
-                    if (!custId) {
-                        e.preventDefault();
-                        showToast('Silahkan pilih customer untuk pembayaran kredit!', 'error');
-                        return false;
+            init() {
+                this.renderCart();
+                this.filterProducts();
+                this.updateTotals();
+                let self = this;
+                let accountPanel = document.getElementById('accountPanel');
+                document.getElementById('paymentMethod').addEventListener('change', function() {
+                    let isCredit = this.options[this.selectedIndex].dataset.credit === '1';
+                    let isCash = this.options[this.selectedIndex].textContent.trim() === 'Tunai';
+                    accountPanel.style.display = isCash ? 'none' : '';
+                    if (isCredit) {
+                        self.btnPayLabel = 'Proses Kredit';
+                    } else {
+                        self.btnPayLabel = 'Bayar';
                     }
+                });
+                document.getElementById('paymentMethod').dispatchEvent(new Event('change'));
+            },
+
+            filterProducts() {
+                let search = this.searchProduct.toLowerCase();
+                let count = 0;
+                document.querySelectorAll('.product-card-item').forEach(el => {
+                    let match = !search ||
+                        el.dataset.name.includes(search) ||
+                        el.dataset.code.includes(search) ||
+                        (el.dataset.barcode && el.dataset.barcode.includes(search));
+                    el.style.display = match ? '' : 'none';
+                    if (match) count++;
+                });
+                this.filteredCount = count;
+            },
+
+            filterByCategory(catId) {
+                document.querySelectorAll('.product-card-item').forEach(el => {
+                    if (catId === 'all' || el.dataset.category === String(catId)) {
+                        el.style.display = '';
+                    } else {
+                        el.style.display = 'none';
+                    }
+                });
+            },
+
+            searchCustomers(query) {
+                if (!query) return [];
+                let q = query.toLowerCase();
+                return this.allCustomers.filter(c =>
+                    c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
+                );
+            },
+
+            addToCart(id, name, price, stock) {
+                if (stock <= 0) {
+                    showToast('Stok habis', 'warning');
+                    return;
                 }
-            }
-            let p = document.getElementById('paidAmount');
-            if (p) p.value = p.value.replace(/\D/g, '') || '0';
-            document.querySelectorAll('#cartTable tbody .price-input, #cartTable tbody .disc-input').forEach(function(el) {
-                el.value = el.value.replace(/\D/g, '') || '0';
-            });
-        });
+                let existing = this.cart.find(c => c.id === id);
+                if (existing) {
+                    if (existing.qty >= stock) {
+                        showToast('Stok tidak mencukupi (max ' + stock + ')', 'warning');
+                        return;
+                    }
+                    existing.qty++;
+                    existing.total = existing.qty * existing.price - (existing.discount || 0);
+                } else {
+                    this.cart.push({ id, name, price, stock, qty: 1, discount: 0, total: price });
+                }
+                this.renderCart();
+                this.updateTotals();
+                showToast(name + ' ditambahkan', 'info');
+            },
+
+            updateQty(index, qty) {
+                let item = this.cart[index];
+                qty = parseFloat(qty) || 1;
+                if (qty <= 0) { this.removeFromCart(index); return; }
+                if (qty > item.stock) {
+                    showToast('Stok tidak mencukupi (max ' + item.stock + ')', 'warning');
+                    qty = item.stock;
+                }
+                item.qty = qty;
+                item.total = item.qty * item.price - (item.discount || 0);
+                this.renderCart();
+                this.updateTotals();
+            },
+
+            updateDiscount(index, discount) {
+                let item = this.cart[index];
+                discount = parseFloat(discount) || 0;
+                item.discount = discount;
+                item.total = Math.max(0, item.qty * item.price - discount);
+                this.renderCart();
+                this.updateTotals();
+            },
+
+            removeFromCart(index) {
+                this.cart.splice(index, 1);
+                this.renderCart();
+                this.updateTotals();
+            },
+
+            clearCart() {
+                this.cart = [];
+                this.renderCart();
+                this.updateTotals();
+                this.cartModal = false;
+                showToast('Keranjang dikosongkan', 'info');
+            },
+
+            renderCart() {
+                let tbody = document.querySelector('#cartTable tbody');
+                let emptyEl = document.getElementById('emptyCart');
+                if (!tbody) return;
+                if (this.cart.length === 0) {
+                    tbody.innerHTML = '';
+                    if (emptyEl) emptyEl.style.display = '';
+                    document.getElementById('btnPay').disabled = true;
+                    return;
+                }
+                if (emptyEl) emptyEl.style.display = 'none';
+                document.getElementById('btnPay').disabled = false;
+                let rows = this.cart.map((item, idx) => `
+                    <tr class="cart-row">
+                        <td class="text-sm"><span class="font-medium">${item.name}</span><br><span class="text-[10px] text-slate-400">Rp ${item.price.toLocaleString('id-ID')}</span></td>
+                        <td class="text-sm" style="width: 90px;">
+                            <div class="flex items-center gap-0.5">
+                                <button type="button" @@click="updateQty(${idx}, ${item.qty - 1})" class="btn btn-sm btn-outline-secondary p-0 w-6 h-6 flex items-center justify-center"><i class="bi bi-dash text-xs"></i></button>
+                                <input type="number" value="${item.qty}" min="1" max="${item.stock}" step="1"
+                                       @@change="updateQty(${idx}, $event.target.value)"
+                                       class="form-input text-center text-sm" style="width: 48px; padding: 2px 4px;">
+                                <button type="button" @@click="updateQty(${idx}, ${item.qty + 1})" class="btn btn-sm btn-outline-secondary p-0 w-6 h-6 flex items-center justify-center"><i class="bi bi-plus text-xs"></i></button>
+                            </div>
+                        </td>
+                        <td class="text-sm">${item.price.toLocaleString('id-ID')}</td>
+                        <td style="width: 70px;">
+                            <input type="number" value="${item.discount || 0}" min="0"
+                                   @@change="updateDiscount(${idx}, $event.target.value)"
+                                   class="form-input text-center text-sm" style="width: 60px; padding: 2px 4px;">
+                        </td>
+                        <td class="text-sm text-right font-medium">${Math.max(0, item.total).toLocaleString('id-ID')}</td>
+                        <td class="text-center" style="width: 36px;">
+                            <button type="button" @@click="removeFromCart(${idx})" class="btn btn-sm btn-outline-danger p-0 w-7 h-7 flex items-center justify-center"><i class="bi bi-trash text-xs"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
+                tbody.innerHTML = rows;
+                this.recalcTax();
+            },
+
+            updateTotals() {
+                let subtotal = this.cart.reduce((sum, item) => sum + (item.qty * item.price), 0);
+                let itemDiscount = this.cart.reduce((sum, item) => sum + (item.discount || 0), 0);
+                let taxRate = parseFloat(document.getElementById('taxSelect')?.selectedOptions[0]?.dataset?.rate || 0);
+                let taxable = Math.max(0, subtotal - itemDiscount);
+                let tax = Math.round(taxable * taxRate / 100);
+                let addDisc = parseFloat(this.additionalDiscount) || 0;
+                let total = Math.max(0, taxable + tax - addDisc);
+
+                document.getElementById('cartSubtotal').textContent = 'Rp ' + subtotal.toLocaleString('id-ID');
+                document.getElementById('cartDiscount').textContent = '-Rp ' + itemDiscount.toLocaleString('id-ID');
+                document.getElementById('cartTax').textContent = 'Rp ' + tax.toLocaleString('id-ID');
+                document.getElementById('cartAddDisc').textContent = '-Rp ' + addDisc.toLocaleString('id-ID');
+                document.getElementById('cartTotal').textContent = 'Rp ' + total.toLocaleString('id-ID');
+                document.getElementById('totalAddDisc').value = addDisc;
+                this.updateChange();
+            },
+
+            recalcTax() {
+                let taxSelect = document.getElementById('taxSelect');
+                let rate = taxSelect?.selectedOptions[0]?.dataset?.rate || 0;
+                document.getElementById('taxLabel').textContent = rate + '%';
+                this.updateTotals();
+            },
+
+            updateChange() {
+                let totalText = document.getElementById('cartTotal').textContent.replace(/[^\d,-]/g, '').replace(/\./g, '').replace(',', '.');
+                let total = parseFloat(totalText) || 0;
+                let paidEl = document.getElementById('paidAmount');
+                let paid = 0;
+                if (paidEl) {
+                    paid = parseInt(paidEl.value.replace(/\D/g, ''), 10) || 0;
+                }
+                let change = Math.max(0, paid - total);
+                let changeRow = document.getElementById('changeRow');
+                let changeAmount = document.getElementById('changeAmount');
+                if (paid > 0 && changeRow) {
+                    changeRow.style.display = '';
+                    if (changeAmount) changeAmount.textContent = 'Rp ' + change.toLocaleString('id-ID');
+                } else if (changeRow) {
+                    changeRow.style.display = 'none';
+                }
+            },
+
+            handleCheckout() {
+                if (this.cart.length === 0 || this.loading) return;
+                this.loading = true;
+                let form = document.getElementById('posForm');
+                let fd = new FormData(form);
+                let self = this;
+
+                // Build items data
+                this.cart.forEach((item, idx) => {
+                    fd.append('items[' + idx + '][product_id]', item.id);
+                    fd.append('items[' + idx + '][quantity]', item.qty);
+                    fd.append('items[' + idx + '][unit_price]', item.price);
+                    fd.append('items[' + idx + '][discount]', item.discount || 0);
+                });
+
+                // Clean paid_amount
+                let paidEl = document.getElementById('paidAmount');
+                if (paidEl) fd.set('paid_amount', paidEl.value.replace(/\D/g, '') || '0');
+
+                fetch(form.action, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+                    body: fd,
+                })
+                .then(r => r.json().then(data => ({ ok: r.ok, data })))
+                .then(({ ok, data }) => {
+                    if (ok) {
+                        showToast(data.message || 'Transaksi berhasil', 'success');
+                        self.clearCart();
+                        self.cartModal = false;
+                        if (data.sale_id && self.printerType !== 'none') {
+                            let printUrl = self.printerType === 'thermal'
+                                ? '{{ url('pos/print-thermal') }}/' + data.sale_id
+                                : '{{ url('pos/print-a4') }}/' + data.sale_id;
+                            setTimeout(() => {
+                                let iframe = document.createElement('iframe');
+                                iframe.style.display = 'none';
+                                iframe.src = printUrl;
+                                iframe.onload = function() { this.contentWindow.print(); };
+                                document.body.appendChild(iframe);
+                                setTimeout(() => document.body.removeChild(iframe), 60000);
+                            }, 300);
+                        }
+                    } else {
+                        showToast(data.message || Object.values(data.errors || {}).flat().join('<br>') || 'Gagal', 'error');
+                    }
+                })
+                .catch(() => showToast('Gagal memproses transaksi', 'error'))
+                .finally(() => { self.loading = false; });
+            },
+
+            saveCustomer() {
+                let self = this;
+                if (!this.customerForm.name.trim()) return;
+                this.customerFormLoading = true;
+                fetch('{{ route('pos.customer-quick') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify(this.customerForm),
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        self.allCustomers.push(data.customer);
+                        showToast('Customer berhasil ditambahkan', 'success');
+                        self.customerModal = false;
+                    } else {
+                        showToast(data.message || 'Gagal menambah customer', 'error');
+                    }
+                })
+                .catch(() => showToast('Gagal menambah customer', 'error'))
+                .finally(() => { self.customerFormLoading = false; });
+            },
+
+            loadHistory() {
+                let self = this;
+                fetch('{{ route('pos.recent') }}')
+                    .then(r => r.json())
+                    .then(data => {
+                        let list = document.getElementById('historyList');
+                        if (!list) return;
+                        if (!data.length) {
+                            list.innerHTML = '<div class="text-center py-8 text-slate-400">Belum ada transaksi</div>';
+                            return;
+                        }
+                        list.innerHTML = data.map(s => `
+                            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                                <div>
+                                    <span class="font-medium text-sm">${s.invoice}</span><br>
+                                    <span class="text-xs text-slate-500">${s.customer} | ${s.date} | ${s.method}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-sm">${s.total}</span>
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium ${s.status === 'paid' ? 'bg-emerald-50 text-emerald-600' : s.status === 'partial' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}">${s.status === 'paid' ? 'Lunas' : s.status === 'partial' ? 'Sebagian' : 'Belum'}</span>
+                                    <a href="${s.print_a4}" target="_blank" class="btn btn-sm p-1 w-7 h-7 flex items-center justify-center" title="Cetak A4"><i class="bi bi-printer text-xs"></i></a>
+                                </div>
+                            </div>
+                        `).join('');
+                    })
+                    .catch(() => {
+                        let list = document.getElementById('historyList');
+                        if (list) list.innerHTML = '<div class="text-center py-8 text-slate-400">Gagal memuat riwayat</div>';
+                    });
+            },
+        };
     }
-});
+
+    window.posKasir = posKasir;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.getElementById('headerDateTime')) {
+            updateDateTime();
+            setInterval(updateDateTime, 30000);
+        }
+    });
 </script>
 @endpush
 @endsection

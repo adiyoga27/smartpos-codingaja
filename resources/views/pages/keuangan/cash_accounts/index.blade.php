@@ -26,7 +26,7 @@
     <div class="card-body p-0">
         <div class="overflow-x-auto">
             <table class="table table-striped mb-0" id="cash-accounts-table" style="width:100%">
-                <thead><tr><th>Kode</th><th>Nama</th><th>Tipe</th><th>Bank</th><th>No. Rekening</th><th>Saldo</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>Kode</th><th>Nama</th><th>Tipe</th><th>Akun COA</th><th>Bank</th><th>No. Rek</th><th>Saldo</th><th>Aksi</th></tr></thead>
             </table>
         </div>
     </div>

@@ -16,6 +16,16 @@
                 <div><label class="form-label">Tipe</label>
                     <select name="type" class="form-select" required><option value="cash">Kas</option><option value="bank">Bank</option></select>
                 </div>
+                <div>
+                    <label class="form-label">Akun COA (Chart of Accounts)</label>
+                    <select name="account_id" class="form-select select2">
+                        <option value="">- Otomatis buat baru -</option>
+                        @foreach($coaAccounts as $coa)
+                        <option value="{{ $coa->id }}">{{ $coa->code }} - {{ $coa->name }}</option>
+                        @endforeach
+                    </select>
+                    <small class="text-slate-400">Kosongkan untuk auto-buat Akun COA baru</small>
+                </div>
                 <div><label class="form-label">Nama Bank</label><input type="text" name="bank_name" class="form-input"></div>
                 <div><label class="form-label">No. Rekening</label><input type="text" name="account_number" class="form-input"></div>
                 <div><label class="form-label">Saldo Awal</label><input type="number" name="opening_balance" class="form-input" value="0" required></div>
@@ -33,4 +43,9 @@
         </form>
     </div>
 </div>
+@push('scripts')
+<script>
+$(document).ready(function() { $('.select2').select2({ theme: 'bootstrap-5', width: '100%' }); });
+</script>
+@endpush
 @endsection

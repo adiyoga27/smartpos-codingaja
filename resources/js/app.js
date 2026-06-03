@@ -55,8 +55,9 @@ window.hideLoader = function () {
 };
 
 // Auto show toast on page load from session messages
-document.addEventListener('DOMContentLoaded', function () {
+(function toastInit() {
     const body = document.body;
+    if (!body) return setTimeout(toastInit, 10);
     if (body.dataset.toastSuccess) {
         showToast(body.dataset.toastSuccess, 'success');
     }
@@ -67,7 +68,6 @@ document.addEventListener('DOMContentLoaded', function () {
         showToast(body.dataset.toastWarning, 'warning');
     }
 
-    // Show validation errors as toast warnings
     const invalidInputs = document.querySelectorAll('.is-invalid');
     if (invalidInputs.length > 0) {
         invalidInputs.forEach(function (input) {
@@ -77,33 +77,31 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+})();
 
-    // Currency auto-format for inputs with class .rupiah-input
+// Currency auto-format for inputs with class .rupiah-input
+(function currencyInit() {
     document.querySelectorAll('.rupiah-input').forEach(function (input) {
-        // Format on blur
         input.addEventListener('blur', function () {
             let val = this.value.replace(/\D/g, '');
             if (val === '') { this.value = ''; return; }
             this.value = parseInt(val, 10).toLocaleString('id-ID');
         });
-        // Clean on focus
         input.addEventListener('focus', function () {
             this.value = this.value.replace(/\D/g, '');
         });
-        // Handle input events from cart/qty changes
         input.addEventListener('input', function () {
             let raw = this.value.replace(/\D/g, '');
             if (raw.length > 0 && raw.length <= 3) {
                 this.value = raw;
             }
         });
-        // Initial format if has value
         let initVal = input.value.replace(/\D/g, '');
         if (initVal && initVal !== '0' && initVal !== '') {
             input.value = parseInt(initVal, 10).toLocaleString('id-ID');
         }
     });
-});
+})();
 
 // Global: get raw number from rupiah input
 window.getRawRupiah = function (el) {

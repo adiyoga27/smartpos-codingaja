@@ -22,6 +22,8 @@ class RolePermissionSeeder extends Seeder
             'purchase_return',
             'sale',
             'sale_return',
+            'sales_order',
+            'delivery_order',
             'payable',
             'receivable',
             'cash_account',
@@ -51,6 +53,7 @@ class RolePermissionSeeder extends Seeder
         $kasir->givePermissionTo([
             'view_dashboard', 'view_product', 'view_sale', 'create_sale', 'view_sale_return', 'create_sale_return',
             'view_customer', 'view_cash_account', 'view_cash_transaction', 'create_cash_transaction',
+            'view_sales_order', 'create_sales_order', 'view_delivery_order',
         ]);
 
         $gudang = Role::firstOrCreate(['name' => 'Manajer Gudang', 'guard_name' => 'web']);
@@ -61,6 +64,8 @@ class RolePermissionSeeder extends Seeder
             'view_purchase_return', 'create_purchase_return', 'edit_purchase_return',
             'view_supplier', 'create_supplier', 'edit_supplier',
             'view_stock_mutation', 'view_stock_opname', 'create_stock_opname',
+            'view_sales_order', 'create_sales_order', 'edit_sales_order',
+            'view_delivery_order', 'create_delivery_order',
         ]);
 
         $akuntan = Role::firstOrCreate(['name' => 'Akuntan', 'guard_name' => 'web']);
