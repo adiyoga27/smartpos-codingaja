@@ -215,6 +215,120 @@ class PurchaseController extends Controller
         return redirect()->route('transaksi.purchases.index')->with('success', 'PO berhasil dihapus.');
     }
 
+    public function direct()
+    {
+        $suppliers = Supplier::active()->pluck('name', 'id');
+        $products = Product::active()->get();
+        $prefix = CompanySetting::first()->doc_prefix_po ?? 'PO';
+        $documentNumber = $prefix.'-DIRECT-'.now()->format('Ymd').'-'.str_pad((Purchase::withTrashed()->count() + 1), 4, '0', STR_PAD_LEFT);
+
+        return view('pages.transaksi.purchases.direct', compact('suppliers', 'products', 'documentNumber'));
+    }
+
+    public function storeDirect(Request $request)
+    {
+        $validated = $request->validate([
+            'document_number' => 'required|string|unique:purchases',
+            'supplier_id' => 'required|exists:suppliers,id',
+            'purchase_date' => 'required|date',
+            'due_date' => 'nullable|date',
+            'notes' => 'nullable|string',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|numeric|min:0.01',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.discount' => 'nullable|numeric|min:0',
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            $subtotal = 0;
+            foreach ($validated['items'] as $item) {
+                $total = ($item['quantity'] * $item['unit_price']) - ($item['discount'] ?? 0);
+                $subtotal += max(0, $total);
+            }
+            $tax = 0;
+            $total = $subtotal + $tax;
+
+            $purchase = Purchase::create([
+                'document_number' => $validated['document_number'],
+                'supplier_id' => $validated['supplier_id'],
+                'purchase_date' => $validated['purchase_date'],
+                'due_date' => $validated['due_date'] ?? null,
+                'status' => 'completed',
+                'subtotal' => $subtotal,
+                'discount' => 0,
+                'tax' => $tax,
+                'total' => $total,
+                'paid_amount' => 0,
+                'notes' => $validated['notes'] ?? null,
+                'created_by' => auth()->id(),
+            ]);
+
+            foreach ($validated['items'] as $item) {
+                $lineTotal = ($item['quantity'] * $item['unit_price']) - ($item['discount'] ?? 0);
+                PurchaseItem::create([
+                    'purchase_id' => $purchase->id,
+                    'product_id' => $item['product_id'],
+                    'quantity' => $item['quantity'],
+                    'received_quantity' => $item['quantity'],
+                    'unit_price' => $item['unit_price'],
+                    'discount' => $item['discount'] ?? 0,
+                    'total' => max(0, $lineTotal),
+                ]);
+
+                $product = Product::find($item['product_id']);
+                if ($product) {
+                    $oldStock = $product->stock;
+                    $product->stock += $item['quantity'];
+                    $product->save();
+
+                    StockMutation::create([
+                        'product_id' => $product->id,
+                        'type' => 'in',
+                        'quantity' => $item['quantity'],
+                        'stock_before' => $oldStock,
+                        'stock_after' => $product->stock,
+                        'reference_type' => Purchase::class,
+                        'reference_id' => $purchase->id,
+                        'notes' => 'Pembelian langsung '.$purchase->document_number,
+                        'created_by' => auth()->id(),
+                    ]);
+                }
+            }
+
+            Payable::create([
+                'supplier_id' => $purchase->supplier_id,
+                'purchase_id' => $purchase->id,
+                'document_number' => $purchase->document_number,
+                'due_date' => $purchase->due_date,
+                'amount' => $purchase->total,
+                'paid_amount' => 0,
+                'remaining_amount' => $purchase->total,
+                'status' => 'open',
+            ]);
+
+            $inventoryAccount = Account::where('code', '1-1300')->first();
+            $hutangAccount = Account::where('code', '2-1000')->first();
+            if ($inventoryAccount && $hutangAccount) {
+                $journal = Journal::create([
+                    'journal_number' => 'JUR-'.now()->format('Ymd').'-'.str_pad((Journal::count() + 1), 4, '0', STR_PAD_LEFT),
+                    'journal_date' => now(),
+                    'description' => 'Jurnal pembelian langsung '.$purchase->document_number,
+                    'source' => 'purchase',
+                    'reference_id' => $purchase->id,
+                    'reference_type' => Purchase::class,
+                    'total_debit' => $purchase->total,
+                    'total_credit' => $purchase->total,
+                    'created_by' => auth()->id(),
+                ]);
+                JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $inventoryAccount->id, 'debit' => $purchase->total, 'credit' => 0]);
+                JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $hutangAccount->id, 'debit' => 0, 'credit' => $purchase->total]);
+            }
+        });
+
+        return redirect()->route('transaksi.purchases.index')->with('success', 'Pembelian langsung berhasil disimpan.');
+    }
+
     public function print(Purchase $purchase)
     {
         $purchase->load(['items.product', 'supplier', 'creator']);

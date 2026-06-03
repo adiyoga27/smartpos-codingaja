@@ -37,28 +37,28 @@
                     <input type="text" name="unit" class="form-input" value="{{ old('unit', $product->unit) }}" required>
                 </div>
                 <div>
-                    <label class="form-label">Harga Beli</label>
-                    <input type="number" name="purchase_price" class="form-input" value="{{ old('purchase_price', $product->purchase_price) }}" required>
+                    <label class="form-label">Harga Beli (Rp)</label>
+                    <input type="text" name="purchase_price" class="form-input rupiah-input" value="{{ old('purchase_price', $product->purchase_price) }}" required>
                 </div>
                 <div>
-                    <label class="form-label">Harga Jual</label>
-                    <input type="number" name="selling_price" class="form-input" value="{{ old('selling_price', $product->selling_price) }}" required>
+                    <label class="form-label">Harga Jual (Rp)</label>
+                    <input type="text" name="selling_price" class="form-input rupiah-input" value="{{ old('selling_price', $product->selling_price) }}" required>
                 </div>
                 <div>
-                    <label class="form-label">Harga Grosir</label>
-                    <input type="number" name="wholesale_price" class="form-input" value="{{ old('wholesale_price', $product->wholesale_price) }}">
+                    <label class="form-label">Harga Grosir (Rp)</label>
+                    <input type="text" name="wholesale_price" class="form-input rupiah-input" value="{{ old('wholesale_price', $product->wholesale_price) }}">
                 </div>
                 <div>
                     <label class="form-label">Stok</label>
-                    <input type="number" name="stock" class="form-input" value="{{ old('stock', $product->stock) }}" required>
+                    <input type="number" name="stock" class="form-input" value="{{ old('stock', $product->stock) }}" min="0" step="1" required>
                 </div>
                 <div>
                     <label class="form-label">Stok Minimum</label>
-                    <input type="number" name="min_stock" class="form-input" value="{{ old('min_stock', $product->min_stock) }}" required>
+                    <input type="number" name="min_stock" class="form-input" value="{{ old('min_stock', $product->min_stock) }}" min="0" step="1" required>
                 </div>
                 <div>
                     <label class="form-label">Stok Maksimum</label>
-                    <input type="number" name="max_stock" class="form-input" value="{{ old('max_stock', $product->max_stock) }}">
+                    <input type="number" name="max_stock" class="form-input" value="{{ old('max_stock', $product->max_stock) }}" min="0" step="1">
                 </div>
                 <div>
                     <label class="form-label">Foto</label>

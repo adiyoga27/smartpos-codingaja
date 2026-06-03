@@ -77,5 +77,28 @@ class RolePermissionSeeder extends Seeder
             'view_cash_transaction', 'create_cash_transaction', 'edit_cash_transaction',
             'view_report',
         ]);
+
+        $admin = Role::firstOrCreate(['name' => 'Admin', 'guard_name' => 'web']);
+        $admin->givePermissionTo([
+            'view_dashboard',
+            'view_category', 'create_category', 'edit_category', 'delete_category',
+            'view_product', 'create_product', 'edit_product', 'delete_product',
+            'view_supplier', 'create_supplier', 'edit_supplier', 'delete_supplier',
+            'view_customer', 'create_customer', 'edit_customer', 'delete_customer',
+            'view_account', 'create_account', 'edit_account',
+            'view_payment_method',
+            'view_purchase', 'create_purchase', 'edit_purchase', 'delete_purchase',
+            'view_purchase_return', 'create_purchase_return',
+            'view_sale', 'create_sale', 'view_sale_return', 'create_sale_return',
+            'view_sales_order', 'create_sales_order', 'view_delivery_order',
+            'view_payable', 'view_receivable',
+            'view_cash_account', 'create_cash_account', 'edit_cash_account',
+            'view_cash_transaction', 'create_cash_transaction',
+            'view_journal', 'create_journal',
+            'view_ledger', 'view_balance_sheet', 'view_income_statement',
+            'view_stock_mutation', 'view_stock_opname', 'create_stock_opname',
+            'view_report',
+            'view_user', 'view_role',
+        ]);
     }
 }

@@ -20,7 +20,7 @@
                 <table class="table table-striped mb-0">
                     <tbody>
                         @forelse($assets as $acc)
-                        <tr><td>{{ $acc->code }} - {{ $acc->name }}</td><td class="text-right">{{ formatRupiah($acc->opening_balance + ($acc->balance ?? 0)) }}</td></tr>
+                        <tr><td>{{ $acc->code }} - {{ $acc->name }}</td><td class="text-right">{{ formatRupiah($acc->balance) }}</td></tr>
                         @empty
                         <tr><td colspan="2" class="text-center text-slate-400">Tidak ada data</td></tr>
                         @endforelse
@@ -36,7 +36,7 @@
                 <table class="table table-striped mb-0">
                     <tbody>
                         @forelse($liabilities as $acc)
-                        <tr><td>{{ $acc->code }} - {{ $acc->name }}</td><td class="text-right">{{ formatRupiah($acc->opening_balance) }}</td></tr>
+                        <tr><td>{{ $acc->code }} - {{ $acc->name }}</td><td class="text-right">{{ formatRupiah($acc->balance) }}</td></tr>
                         @empty
                         <tr><td colspan="2" class="text-center text-slate-400">Tidak ada data</td></tr>
                         @endforelse
@@ -50,7 +50,7 @@
                 <table class="table table-striped mb-0">
                     <tbody>
                         @forelse($equity as $acc)
-                        <tr><td>{{ $acc->code }} - {{ $acc->name }}</td><td class="text-right">{{ formatRupiah($acc->opening_balance) }}</td></tr>
+                        <tr><td>{{ $acc->code }} - {{ $acc->name }}</td><td class="text-right">{{ formatRupiah($acc->balance) }}</td></tr>
                         @empty
                         <tr><td colspan="2" class="text-center text-slate-400">Tidak ada data</td></tr>
                         @endforelse

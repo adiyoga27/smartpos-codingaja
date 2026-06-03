@@ -48,6 +48,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Transaksi
     Route::prefix('transaksi')->name('transaksi.')->group(function () {
+        Route::get('purchases/create/direct', [PurchaseController::class, 'direct'])->name('purchases.direct');
+        Route::post('purchases/store/direct', [PurchaseController::class, 'storeDirect'])->name('purchases.storeDirect');
         Route::resource('purchases', PurchaseController::class);
         Route::patch('purchases/{purchase}/receive', [PurchaseController::class, 'receive'])->name('purchases.receive');
         Route::get('purchases/{purchase}/print', [PurchaseController::class, 'print'])->name('purchases.print');
@@ -73,12 +75,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Hutang & Piutang
     Route::prefix('keuangan')->name('keuangan.')->group(function () {
+        Route::get('payables/create', [PayableController::class, 'create'])->name('payables.create');
+        Route::post('payables', [PayableController::class, 'store'])->name('payables.store');
         Route::get('payables', [PayableController::class, 'index'])->name('payables.index');
         Route::get('payables/{payable}/pay', [PayableController::class, 'payForm'])->name('payables.pay');
         Route::post('payables/{payable}/pay', [PayableController::class, 'payStore'])->name('payables.pay.store');
+        Route::get('receivables/create', [ReceivableController::class, 'create'])->name('receivables.create');
+        Route::post('receivables', [ReceivableController::class, 'store'])->name('receivables.store');
         Route::get('receivables', [ReceivableController::class, 'index'])->name('receivables.index');
         Route::get('receivables/{receivable}/receive', [ReceivableController::class, 'receiveForm'])->name('receivables.receive');
         Route::post('receivables/{receivable}/receive', [ReceivableController::class, 'receiveStore'])->name('receivables.receive.store');
+        Route::get('cash_accounts/{cash_account}/adjust', [CashAccountController::class, 'adjustForm'])->name('cash_accounts.adjust');
+        Route::post('cash_accounts/{cash_account}/adjust', [CashAccountController::class, 'adjustStore'])->name('cash_accounts.adjust.store');
         Route::resource('cash_accounts', CashAccountController::class);
         Route::resource('cash_transactions', CashTransactionController::class);
     });
@@ -95,6 +103,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('stok')->name('stok.')->group(function () {
         Route::get('mutations', [StockMutationController::class, 'index'])->name('mutations.index');
         Route::get('mutations/{product}', [StockMutationController::class, 'show'])->name('mutations.show');
+        Route::get('opname/history', [StockMutationController::class, 'opnameHistory'])->name('opname.history');
+        Route::get('opname/select', [StockMutationController::class, 'opnameSelect'])->name('opname.select');
         Route::get('opname', [StockMutationController::class, 'opnameForm'])->name('opname');
         Route::post('opname', [StockMutationController::class, 'opnameStore'])->name('opname.store');
     });

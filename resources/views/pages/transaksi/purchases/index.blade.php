@@ -7,7 +7,10 @@
 @section('content')
 <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
     <h4 class="font-bold mb-0">Purchase Order</h4>
-    <a href="{{ route('transaksi.purchases.create') }}" class="btn btn-primary btn-md"><i class="bi bi-plus-lg"></i> Buat PO</a>
+    <div class="flex gap-2">
+        <a href="{{ route('transaksi.purchases.create') }}" class="btn btn-primary btn-md"><i class="bi bi-plus-lg"></i> Buat PO</a>
+        <a href="{{ route('transaksi.purchases.direct') }}" class="btn btn-success btn-md"><i class="bi bi-cart-check"></i> Pembelian Langsung</a>
+    </div>
 </div>
 <div class="card">
     <div class="card-body">

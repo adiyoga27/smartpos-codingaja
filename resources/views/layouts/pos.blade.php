@@ -28,29 +28,9 @@
         </div>
     </div>
 
-    <div id="toast-container" class="toast-container"></div>
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 toast-container"></div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script>
-        function showToast(message, type = 'success') {
-            let container = document.getElementById('toast-container');
-            if (!container) return;
-            let colors = { success: 'bg-emerald-500', error: 'bg-red-500', warning: 'bg-amber-500', info: 'bg-blue-500' };
-            let icons = { success: 'bi-check-circle-fill', error: 'bi-exclamation-circle-fill', warning: 'bi-exclamation-triangle-fill', info: 'bi-info-circle-fill' };
-            let toast = document.createElement('div');
-            toast.className = `${colors[type] || colors.info} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 mb-2 animate-slide-in`;
-            toast.innerHTML = `<i class="bi ${icons[type] || icons.info}"></i><span class="text-sm">${message}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3000);
-        }
-
-        (function() {
-            var body = document.body;
-            if (body.dataset.toastSuccess) showToast(body.dataset.toastSuccess, 'success');
-            if (body.dataset.toastError) showToast(body.dataset.toastError, 'error');
-            if (body.dataset.toastWarning) showToast(body.dataset.toastWarning, 'warning');
-        })();
-    </script>
     @livewireScripts
     @stack('scripts')
 </body>

@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Keuangan;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\CashAccount;
+use App\Models\CashTransaction;
+use App\Models\CompanySetting;
 use App\Models\Journal;
 use App\Models\JournalEntry;
 use App\Models\Payable;
 use App\Models\PayablePayment;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -93,6 +96,17 @@ class PayableController extends Controller
             $cash->current_balance -= $validated['amount'];
             $cash->save();
 
+            CashTransaction::create([
+                'cash_account_id' => $cash->id,
+                'type' => 'out',
+                'amount' => $validated['amount'],
+                'date' => now(),
+                'description' => 'Pembayaran hutang '.$payable->document_number,
+                'reference_type' => PayablePayment::class,
+                'reference_id' => $payable->id,
+                'created_by' => auth()->id(),
+            ]);
+
             $hutang = Account::where('code', '2-1000')->first();
             $kas = Account::where('code', '1-1000')->first();
             if ($hutang && $kas) {
@@ -113,5 +127,38 @@ class PayableController extends Controller
         });
 
         return redirect()->route('keuangan.payables.index')->with('success', 'Pembayaran berhasil dicatat.');
+    }
+
+    public function create()
+    {
+        $suppliers = Supplier::active()->pluck('name', 'id');
+        $prefix = CompanySetting::first()->doc_prefix_po ?? 'PO';
+
+        return view('pages.keuangan.payables.create', compact('suppliers', 'prefix'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'supplier_id' => 'required|exists:suppliers,id',
+            'amount' => 'required|numeric|min:0.01',
+            'due_date' => 'required|date',
+            'notes' => 'nullable|string',
+        ]);
+
+        $docNumber = 'HUT-MNL-'.now()->format('Ymd').'-'.str_pad((Payable::count() + 1), 4, '0', STR_PAD_LEFT);
+
+        Payable::create([
+            'supplier_id' => $validated['supplier_id'],
+            'purchase_id' => null,
+            'document_number' => $docNumber,
+            'due_date' => $validated['due_date'],
+            'amount' => $validated['amount'],
+            'paid_amount' => 0,
+            'remaining_amount' => $validated['amount'],
+            'status' => 'open',
+        ]);
+
+        return redirect()->route('keuangan.payables.index')->with('success', 'Hutang manual berhasil ditambahkan.');
     }
 }

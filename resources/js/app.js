@@ -28,11 +28,11 @@ window.showToast = function (message, type = 'success') {
     };
 
     const toastEl = document.createElement('div');
-    toastEl.className = `toast ${bgMap[type] || bgMap.info}`;
+    toastEl.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-white text-sm ${bgMap[type] || bgMap.info}`;
     toastEl.innerHTML = `
         <i class="bi ${iconMap[type] || iconMap.info}"></i>
         <span class="flex-1">${message}</span>
-        <button type="button" class="ml-auto text-white/80 hover:text-white" onclick="this.parentElement.remove()">
+        <button type="button" class="ml-auto text-white/80 hover:text-white shrink-0" onclick="this.parentElement.remove()">
             <i class="bi bi-x-lg"></i>
         </button>
     `;

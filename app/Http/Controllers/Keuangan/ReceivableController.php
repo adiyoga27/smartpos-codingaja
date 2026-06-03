@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Keuangan;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\CashAccount;
+use App\Models\CashTransaction;
+use App\Models\Customer;
 use App\Models\Journal;
 use App\Models\JournalEntry;
 use App\Models\Receivable;
@@ -93,6 +95,17 @@ class ReceivableController extends Controller
             $cash->current_balance += $validated['amount'];
             $cash->save();
 
+            CashTransaction::create([
+                'cash_account_id' => $cash->id,
+                'type' => 'in',
+                'amount' => $validated['amount'],
+                'date' => now(),
+                'description' => 'Penerimaan piutang '.$receivable->document_number,
+                'reference_type' => ReceivablePayment::class,
+                'reference_id' => $receivable->id,
+                'created_by' => auth()->id(),
+            ]);
+
             $piutang = Account::where('code', '1-1200')->first();
             $kas = Account::where('code', '1-1000')->first();
             if ($piutang && $kas) {
@@ -113,5 +126,37 @@ class ReceivableController extends Controller
         });
 
         return redirect()->route('keuangan.receivables.index')->with('success', 'Penerimaan pembayaran berhasil dicatat.');
+    }
+
+    public function create()
+    {
+        $customers = Customer::active()->pluck('name', 'id');
+
+        return view('pages.keuangan.receivables.create', compact('customers'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'customer_id' => 'required|exists:customers,id',
+            'amount' => 'required|numeric|min:0.01',
+            'due_date' => 'required|date',
+            'notes' => 'nullable|string',
+        ]);
+
+        $docNumber = 'PIU-MNL-'.now()->format('Ymd').'-'.str_pad((Receivable::count() + 1), 4, '0', STR_PAD_LEFT);
+
+        Receivable::create([
+            'customer_id' => $validated['customer_id'],
+            'sale_id' => null,
+            'document_number' => $docNumber,
+            'due_date' => $validated['due_date'],
+            'amount' => $validated['amount'],
+            'paid_amount' => 0,
+            'remaining_amount' => $validated['amount'],
+            'status' => 'open',
+        ]);
+
+        return redirect()->route('keuangan.receivables.index')->with('success', 'Piutang manual berhasil ditambahkan.');
     }
 }

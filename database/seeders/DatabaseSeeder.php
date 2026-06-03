@@ -16,13 +16,16 @@ class DatabaseSeeder extends Seeder
         $this->call(ClearDataSeeder::class);
         $this->call(ProductImportFromExcelSeeder::class);
 
-        $admin = User::create([
-            'name' => 'Super Admin',
-            'email' => 'admin@pos.com',
-            'password' => bcrypt('admin123'),
-        ]);
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@pos.com'],
+            [
+                'name' => 'Super Admin',
+                'password' => bcrypt('admin123'),
+            ]
+        );
         $admin->assignRole('Super Admin');
 
+        CompanySetting::query()->delete();
         CompanySetting::create([
             'name' => 'HA - JL. Sandubaya - Sweta',
             'address' => 'Jl. Sandubaya - Sweta, Mataram',
@@ -33,8 +36,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $accounts = [
-            ['code' => '1-1000', 'name' => 'Kas', 'type' => 'asset', 'normal_balance' => 'debit', 'opening_balance' => 30000000],
-            ['code' => '1-1100', 'name' => 'Bank BCA', 'type' => 'asset', 'normal_balance' => 'debit', 'opening_balance' => 25000000],
+            ['code' => '1-1000', 'name' => 'Kas', 'type' => 'asset', 'normal_balance' => 'debit', 'opening_balance' => 0],
+            ['code' => '1-1100', 'name' => 'Bank BCA', 'type' => 'asset', 'normal_balance' => 'debit', 'opening_balance' => 0],
             ['code' => '1-1110', 'name' => 'Bank BRI', 'type' => 'asset', 'normal_balance' => 'debit', 'opening_balance' => 0],
             ['code' => '1-1120', 'name' => 'Bank BNI', 'type' => 'asset', 'normal_balance' => 'debit', 'opening_balance' => 0],
             ['code' => '1-1130', 'name' => 'Bank Mandiri', 'type' => 'asset', 'normal_balance' => 'debit', 'opening_balance' => 0],
@@ -47,7 +50,7 @@ class DatabaseSeeder extends Seeder
             ['code' => '2-1000', 'name' => 'Hutang Dagang', 'type' => 'liability', 'normal_balance' => 'credit', 'opening_balance' => 0],
             ['code' => '2-1100', 'name' => 'Hutang Bank', 'type' => 'liability', 'normal_balance' => 'credit', 'opening_balance' => 0],
             ['code' => '2-1200', 'name' => 'Hutang Pajak', 'type' => 'liability', 'normal_balance' => 'credit', 'opening_balance' => 0],
-            ['code' => '3-1000', 'name' => 'Modal Pemilik', 'type' => 'equity', 'normal_balance' => 'credit', 'opening_balance' => 55000000],
+            ['code' => '3-1000', 'name' => 'Modal Pemilik', 'type' => 'equity', 'normal_balance' => 'credit', 'opening_balance' => 0],
             ['code' => '3-1100', 'name' => 'Laba Ditahan', 'type' => 'equity', 'normal_balance' => 'credit', 'opening_balance' => 0],
             ['code' => '4-1000', 'name' => 'Penjualan', 'type' => 'revenue', 'normal_balance' => 'credit', 'opening_balance' => 0],
             ['code' => '4-1100', 'name' => 'Retur Penjualan', 'type' => 'revenue', 'normal_balance' => 'debit', 'opening_balance' => 0],
@@ -60,37 +63,35 @@ class DatabaseSeeder extends Seeder
             ['code' => '5-1500', 'name' => 'Beban Administrasi', 'type' => 'expense', 'normal_balance' => 'debit', 'opening_balance' => 0],
         ];
         foreach ($accounts as $account) {
-            Account::create($account);
+            Account::firstOrCreate(
+                ['code' => $account['code']],
+                $account
+            );
         }
 
-        CashAccount::create([
-            'name' => 'Kas Tunai', 'code' => 'KAS01', 'type' => 'cash',
-            'account_id' => Account::where('code', '1-1000')->value('id'),
-            'opening_balance' => 5000000, 'current_balance' => 5000000,
-        ]);
-        CashAccount::create([
-            'name' => 'Bank BCA', 'code' => 'BNK01', 'type' => 'bank',
-            'account_id' => Account::where('code', '1-1100')->value('id'),
-            'bank_name' => 'BCA', 'account_number' => '1234567890',
-            'opening_balance' => 25000000, 'current_balance' => 25000000,
-        ]);
-        CashAccount::create([
-            'name' => 'Bank BRI', 'code' => 'BNK02', 'type' => 'bank',
-            'account_id' => Account::where('code', '1-1110')->value('id'),
-            'bank_name' => 'BRI', 'account_number' => '0987654321',
-            'opening_balance' => 15000000, 'current_balance' => 15000000,
-        ]);
-        CashAccount::create([
-            'name' => 'Bank BNI', 'code' => 'BNK03', 'type' => 'bank',
-            'account_id' => Account::where('code', '1-1120')->value('id'),
-            'bank_name' => 'BNI', 'account_number' => '1122334455',
-            'opening_balance' => 10000000, 'current_balance' => 10000000,
-        ]);
-        CashAccount::create([
-            'name' => 'Bank Mandiri', 'code' => 'BNK04', 'type' => 'bank',
-            'account_id' => Account::where('code', '1-1130')->value('id'),
-            'bank_name' => 'Mandiri', 'account_number' => '5566778899',
-            'opening_balance' => 0, 'current_balance' => 0,
-        ]);
+        $cashAccounts = [
+            ['name' => 'Kas Tunai', 'code' => 'KAS01', 'type' => 'cash', 'account_code' => '1-1000'],
+            ['name' => 'Bank BCA', 'code' => 'BNK01', 'type' => 'bank', 'account_code' => '1-1100', 'bank_name' => 'BCA', 'account_number' => '1234567890'],
+            ['name' => 'Bank BRI', 'code' => 'BNK02', 'type' => 'bank', 'account_code' => '1-1110', 'bank_name' => 'BRI', 'account_number' => '0987654321'],
+            ['name' => 'Bank BNI', 'code' => 'BNK03', 'type' => 'bank', 'account_code' => '1-1120', 'bank_name' => 'BNI', 'account_number' => '1122334455'],
+            ['name' => 'Bank Mandiri', 'code' => 'BNK04', 'type' => 'bank', 'account_code' => '1-1130', 'bank_name' => 'Mandiri', 'account_number' => '5566778899'],
+        ];
+        foreach ($cashAccounts as $ca) {
+            CashAccount::firstOrCreate(
+                ['code' => $ca['code']],
+                [
+                    'name' => $ca['name'],
+                    'type' => $ca['type'],
+                    'account_id' => Account::where('code', $ca['account_code'])->value('id'),
+                    'bank_name' => $ca['bank_name'] ?? null,
+                    'account_number' => $ca['account_number'] ?? null,
+                    'opening_balance' => 0,
+                    'current_balance' => 0,
+                ]
+            );
+        }
+
+        CashAccount::query()->update(['opening_balance' => 0, 'current_balance' => 0]);
+        Account::query()->update(['opening_balance' => 0]);
     }
 }

@@ -21,9 +21,9 @@ class Product extends Model
         'purchase_price' => 'decimal:2',
         'selling_price' => 'decimal:2',
         'wholesale_price' => 'decimal:2',
-        'stock' => 'decimal:2',
-        'min_stock' => 'decimal:2',
-        'max_stock' => 'decimal:2',
+        'stock' => 'decimal:0',
+        'min_stock' => 'decimal:0',
+        'max_stock' => 'decimal:0',
         'conversion_factor' => 'decimal:2',
     ];
 

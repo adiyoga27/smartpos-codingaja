@@ -89,9 +89,60 @@ class StockMutationController extends Controller
         return view('pages.stok.mutations.show', compact('product'));
     }
 
-    public function opnameForm()
+    public function opnameHistory(Request $request)
+    {
+        if ($request->ajax()) {
+            $query = StockMutation::with(['product', 'creator'])
+                ->where('type', 'opname')
+                ->latest();
+
+            $draw = (int) $request->input('draw', 1);
+            $start = (int) $request->input('start', 0);
+            $length = (int) $request->input('length', 25);
+            $search = $request->input('search.value', '');
+
+            $total = StockMutation::where('type', 'opname')->count();
+            if ($search) {
+                $query->whereHas('product', fn ($q) => $q->where('name', 'like', '%'.$search.'%')->orWhere('code', 'like', '%'.$search.'%'));
+            }
+            $filtered = $query->count();
+            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+                $diff = $item->stock_after - $item->stock_before;
+                $diffBadge = $diff > 0 ? '<span class="text-emerald-600">+'.formatQty($diff).'</span>' : '<span class="text-red-600">'.formatQty($diff).'</span>';
+
+                return [
+                    $item->created_at->format('d/m/Y H:i'),
+                    $item->product?->name ?? '-',
+                    $item->product?->code ?? '-',
+                    formatQty($item->stock_before),
+                    formatQty($item->stock_after),
+                    $diffBadge,
+                    $item->creator?->name ?? '-',
+                ];
+            });
+
+            return response()->json(['draw' => $draw, 'recordsTotal' => $total, 'recordsFiltered' => $filtered, 'data' => $data]);
+        }
+
+        return view('pages.stok.opname_history');
+    }
+
+    public function opnameSelect()
     {
         $products = Product::active()->get();
+
+        return view('pages.stok.opname_select', compact('products'));
+    }
+
+    public function opnameForm(Request $request)
+    {
+        $ids = $request->input('product_ids', []);
+
+        if (empty($ids)) {
+            return redirect()->route('stok.opname.select')->with('error', 'Pilih minimal 1 produk.');
+        }
+
+        $products = Product::active()->whereIn('id', $ids)->get();
 
         return view('pages.stok.opname', compact('products'));
     }
@@ -124,6 +175,6 @@ class StockMutationController extends Controller
             }
         });
 
-        return redirect()->route('stok.mutations.index')->with('success', 'Stock opname berhasil disimpan.');
+        return redirect()->route('stok.opname.history')->with('success', 'Stock opname berhasil disimpan.');
     }
 }

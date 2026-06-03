@@ -5,7 +5,11 @@ namespace App\Http\Controllers\Keuangan;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\CashAccount;
+use App\Models\CashTransaction;
+use App\Models\Journal;
+use App\Models\JournalEntry;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CashAccountController extends Controller
 {
@@ -28,7 +32,8 @@ class CashAccountController extends Controller
             $data = $query->skip($start)->take($length)->get()->map(function ($item) {
                 $typeLabel = $item->type == 'cash' ? '<span class="badge badge-success">Kas</span>' : '<span class="badge badge-info">Bank</span>';
                 $defaultBadge = $item->is_default ? ' <span class="badge badge-primary">Default</span>' : '';
-                $actions = '<a href="'.route('keuangan.cash_accounts.edit', $item).'" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a> ';
+                $actions = '<a href="'.route('keuangan.cash_accounts.adjust', $item).'" class="btn btn-sm btn-info" title="Sesuaikan Saldo"><i class="bi bi-sliders"></i></a> ';
+                $actions .= '<a href="'.route('keuangan.cash_accounts.edit', $item).'" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a> ';
                 $actions .= '<form action="'.route('keuangan.cash_accounts.destroy', $item).'" method="POST" class="d-inline" onsubmit="return confirm(\'Hapus akun ini?\')">'
                     .csrf_field().method_field('DELETE')
                     .'<button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button></form>';
@@ -120,6 +125,73 @@ class CashAccountController extends Controller
         $cashAccount->save();
 
         return redirect()->route('keuangan.cash_accounts.index')->with('success', 'Akun kas/bank berhasil diperbarui.');
+    }
+
+    public function adjustForm(CashAccount $cashAccount)
+    {
+        return view('pages.keuangan.cash_accounts.adjust', compact('cashAccount'));
+    }
+
+    public function adjustStore(Request $request, CashAccount $cashAccount)
+    {
+        $validated = $request->validate([
+            'new_balance' => 'required|numeric|min:0',
+            'notes' => 'nullable|string',
+        ]);
+
+        $oldBalance = $cashAccount->current_balance;
+        $newBalance = $validated['new_balance'];
+        $difference = $newBalance - $oldBalance;
+
+        if ($difference == 0) {
+            return back()->with('warning', 'Tidak ada perubahan saldo.');
+        }
+
+        DB::transaction(function () use ($cashAccount, $newBalance, $difference, $validated) {
+            $type = $difference > 0 ? 'in' : 'out';
+
+            CashTransaction::create([
+                'cash_account_id' => $cashAccount->id,
+                'type' => $type,
+                'amount' => abs($difference),
+                'date' => now(),
+                'description' => 'Penyesuaian saldo manual: '.($validated['notes'] ?? '-'),
+                'reference_type' => 'adjustment',
+                'created_by' => auth()->id(),
+            ]);
+
+            $cashAccount->current_balance = $newBalance;
+            $cashAccount->save();
+
+            $kasAccount = $cashAccount->account;
+            if ($kasAccount && abs($difference) >= 1) {
+                $modalAccount = Account::where('code', '3-1000')->first();
+
+                if ($modalAccount) {
+                    $journal = Journal::create([
+                        'journal_number' => 'JUR-'.now()->format('Ymd').'-'.str_pad((Journal::count() + 1), 4, '0', STR_PAD_LEFT),
+                        'journal_date' => now(),
+                        'description' => 'Penyesuaian saldo '.$cashAccount->name.': '.($validated['notes'] ?? ''),
+                        'source' => 'adjustment',
+                        'reference_id' => $cashAccount->id,
+                        'reference_type' => CashAccount::class,
+                        'total_debit' => abs($difference),
+                        'total_credit' => abs($difference),
+                        'created_by' => auth()->id(),
+                    ]);
+
+                    if ($difference > 0) {
+                        JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $kasAccount->id, 'debit' => abs($difference), 'credit' => 0]);
+                        JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $modalAccount->id, 'debit' => 0, 'credit' => abs($difference)]);
+                    } else {
+                        JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $modalAccount->id, 'debit' => abs($difference), 'credit' => 0]);
+                        JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $kasAccount->id, 'debit' => 0, 'credit' => abs($difference)]);
+                    }
+                }
+            }
+        });
+
+        return redirect()->route('keuangan.cash_accounts.index')->with('success', 'Saldo '.$cashAccount->name.' berhasil disesuaikan.');
     }
 
     public function destroy(CashAccount $cashAccount)
