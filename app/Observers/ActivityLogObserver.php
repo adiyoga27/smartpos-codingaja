@@ -49,7 +49,7 @@ class ActivityLogObserver
         $request = request();
 
         ActivityLog::create([
-            'user_id' => auth()->id(),
+            'user_id' => auth()->check() ? auth()->id() : null,
             'action' => $action,
             'model' => get_class($model),
             'model_id' => $model->getKey(),
