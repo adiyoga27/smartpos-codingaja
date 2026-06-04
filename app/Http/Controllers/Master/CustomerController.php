@@ -28,7 +28,7 @@ class CustomerController extends Controller
                 return [
                     $item->code,
                     $item->name,
-                    $item->type === 'retail' ? 'Retail' : 'Grosir',
+                    $item->type === 'retail' ? 'Retail' : 'Reseller',
                     $item->phone ?? '-',
                     formatRupiah($item->credit_limit),
                     formatRupiah($item->current_balance),

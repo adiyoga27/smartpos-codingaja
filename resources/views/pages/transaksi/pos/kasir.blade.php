@@ -152,7 +152,7 @@
                     <label class="form-label text-sm">Tipe</label>
                     <select x-model="customerForm.type" class="form-select text-sm">
                         <option value="retail">Retail</option>
-                        <option value="wholesale">Grosir</option>
+                        <option value="wholesale">Reseller</option>
                     </select>
                 </div>
                 <button type="button" @click="saveCustomer()" :disabled="customerFormLoading || !customerForm.name.trim()"

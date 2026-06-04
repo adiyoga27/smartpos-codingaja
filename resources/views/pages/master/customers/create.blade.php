@@ -17,7 +17,7 @@
                 <div><label class="form-label">Tipe</label>
                     <select name="type" class="form-select" required>
                         <option value="retail" {{ old('type')=='retail'?'selected':'' }}>Retail</option>
-                        <option value="wholesale" {{ old('type')=='wholesale'?'selected':'' }}>Grosir</option>
+                        <option value="wholesale" {{ old('type')=='wholesale'?'selected':'' }}>Reseller</option>
                     </select>
                 </div>
                 <div><label class="form-label">Telepon</label><input type="text" name="phone" class="form-input" value="{{ old('phone') }}"></div>

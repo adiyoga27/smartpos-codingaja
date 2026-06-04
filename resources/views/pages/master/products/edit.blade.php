@@ -41,11 +41,11 @@
                     <input type="text" name="purchase_price" class="form-input rupiah-input" value="{{ old('purchase_price', $product->purchase_price) }}" required>
                 </div>
                 <div>
-                    <label class="form-label">Harga Jual (Rp)</label>
+                    <label class="form-label">Harga Toko (Rp)</label>
                     <input type="text" name="selling_price" class="form-input rupiah-input" value="{{ old('selling_price', $product->selling_price) }}" required>
                 </div>
                 <div>
-                    <label class="form-label">Harga Grosir (Rp)</label>
+                    <label class="form-label">Harga Reseller (Rp)</label>
                     <input type="text" name="wholesale_price" class="form-input rupiah-input" value="{{ old('wholesale_price', $product->wholesale_price) }}">
                 </div>
                 <div>

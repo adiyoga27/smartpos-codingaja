@@ -36,6 +36,7 @@ class ProductController extends Controller
                     $item->category?->name ?? '-',
                     formatRupiah($item->purchase_price),
                     formatRupiah($item->selling_price),
+                    formatRupiah($item->wholesale_price),
                     $item->stock <= $item->min_stock ? '<span class="badge bg-danger">'.$item->stock.'</span>' : $item->stock,
                     $item->is_active ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-secondary">Nonaktif</span>',
                     '<a href="'.route('master.products.edit', $item).'" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>'.

@@ -44,12 +44,12 @@
                     @error('purchase_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div>
-                    <label class="form-label">Harga Jual (Rp)</label>
+                    <label class="form-label">Harga Toko (Rp)</label>
                     <input type="text" name="selling_price" class="form-input rupiah-input @error('selling_price') is-invalid @enderror" value="{{ old('selling_price',0) }}" required>
                     @error('selling_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div>
-                    <label class="form-label">Harga Grosir (Rp)</label>
+                    <label class="form-label">Harga Reseller (Rp)</label>
                     <input type="text" name="wholesale_price" class="form-input rupiah-input" value="{{ old('wholesale_price',0) }}">
                 </div>
                 <div>
