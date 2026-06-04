@@ -17,7 +17,7 @@ class User extends Authenticatable
         return $this->hasMany(ActivityLog::class);
     }
 
-    protected $fillable = ['name', 'email', 'password', 'photo'];
+    protected $fillable = ['name', 'username', 'email', 'password', 'photo'];
 
     protected $hidden = ['password', 'remember_token'];
 

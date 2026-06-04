@@ -34,11 +34,11 @@
             <form method="POST" action="{{ route('login') }}" class="space-y-5">
                 @csrf
                 <div>
-                    <label for="email" class="form-label">Alamat Email</label>
-                    <input type="email" name="email" id="email"
-                           class="form-input @error('email') is-invalid @enderror"
-                           placeholder="email@example.com" value="{{ old('email') }}" required autofocus>
-                    @error('email')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
+                    <label for="login" class="form-label">Username atau Email</label>
+                    <input type="text" name="login" id="login"
+                           class="form-input @error('login') is-invalid @enderror"
+                           placeholder="username atau email@example.com" value="{{ old('login') }}" required autofocus>
+                    @error('login')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label for="password" class="form-label">Kata Sandi</label>

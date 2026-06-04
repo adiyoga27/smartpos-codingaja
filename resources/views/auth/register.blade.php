@@ -34,6 +34,13 @@
                     @error('name')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
                 </div>
                 <div>
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" name="username" id="username"
+                           class="form-input @error('username') is-invalid @enderror"
+                           placeholder="Username Anda" value="{{ old('username') }}" required>
+                    @error('username')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
+                </div>
+                <div>
                     <label for="email" class="form-label">Alamat Email</label>
                     <input type="email" name="email" id="email"
                            class="form-input @error('email') is-invalid @enderror"

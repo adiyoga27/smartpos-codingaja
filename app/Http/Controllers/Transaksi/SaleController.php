@@ -217,6 +217,14 @@ class SaleController extends Controller
         return view('pages.transaksi.pos.print_thermal', compact('sale', 'company'));
     }
 
+    public function printEpson(Sale $sale)
+    {
+        $sale->load(['items.product', 'paymentMethod']);
+        $company = CompanySetting::first();
+
+        return view('pages.transaksi.pos.print_epson', compact('sale', 'company'));
+    }
+
     public function riwayat(Request $request)
     {
         if ($request->ajax()) {

@@ -28,7 +28,7 @@
         </div>
     </div>
 
-    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 toast-container"></div>
+    <div id="toast-container" class="fixed bottom-6 left-6 z-50 flex flex-col gap-2 toast-container max-w-xs w-fit"></div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     @livewireScripts

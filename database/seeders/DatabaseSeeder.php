@@ -14,12 +14,15 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(RolePermissionSeeder::class);
         $this->call(ClearDataSeeder::class);
+        $this->call(SupplierSeeder::class);
+        $this->call(CustomerSeeder::class);
         $this->call(ProductImportFromExcelSeeder::class);
 
         $admin = User::firstOrCreate(
             ['email' => 'admin@pos.com'],
             [
                 'name' => 'Super Admin',
+                'username' => 'admin',
                 'password' => bcrypt('admin123'),
             ]
         );
