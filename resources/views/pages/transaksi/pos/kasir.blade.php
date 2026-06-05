@@ -1,14 +1,17 @@
 @extends('layouts.pos')
 @section('title', 'POS Kasir')
 @section('content')
-<div x-data="posKasir()" x-on:open-customer-modal="customerModal = true; customerForm = { name: '', phone: '', type: 'retail' }" id="posApp" class="h-full flex flex-col">
+<div x-data="posKasir()" x-on:open-customer-modal="customerModal = true; customerForm = { name: '', phone: '', type: posMode === 'reseller' ? 'wholesale' : 'retail' }" id="posApp" class="h-full flex flex-col">
     <!-- Mini header -->
     <div class="flex items-center justify-between px-3 py-2 bg-white border-b border-slate-200 shrink-0">
         <div class="flex items-center gap-3">
-            <a href="{{ route('dashboard') }}" class="btn btn-secondary btn-sm">
-                <i class="bi bi-arrow-left"></i> Kembali
+            <a href="{{ route('pos.kasir') }}" class="btn btn-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> Ganti Mode
             </a>
             <span class="font-bold text-slate-700 hidden sm:inline">POS Kasir</span>
+            <span x-text="posMode === 'reseller' ? 'Reseller' : 'Toko'"
+                  :class="posMode === 'reseller' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'"
+                  class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase"></span>
         </div>
         <div class="flex items-center gap-3">
             <span class="text-xs text-slate-400 hidden lg:inline">
@@ -29,105 +32,87 @@
         </div>
     </div>
 
-    <!-- Main content: product grid -->
-    <div class="flex-1 flex flex-col p-3 min-h-0">
-        <div class="flex gap-2 mb-3">
-            <div class="relative flex-1">
-                <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" x-model="searchProduct" @input.debounce.100ms="filterProducts()"
-                       class="form-input pl-10" placeholder="Cari produk (nama / kode / barcode)...">
+    <!-- Main: split panel -->
+    <div class="flex-1 flex min-h-0">
+        <!-- Left: product grid -->
+        <div class="flex-1 flex flex-col p-3 min-w-0">
+            <div class="flex gap-2 mb-3">
+                <div class="relative flex-1">
+                    <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" x-model="searchProduct" @input.debounce.100ms="filterProducts()"
+                           class="form-input pl-10" placeholder="Cari produk (nama / kode / barcode)...">
+                </div>
             </div>
-        </div>
 
-        <!-- Category pills -->
-        <div class="flex gap-1.5 mb-3 overflow-x-auto pb-1" x-data="{ activeCat: 'all' }">
-            <button @click="activeCat='all'; filterByCategory('all')"
-                    :class="activeCat==='all' ? 'bg-primary-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
-                    class="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0">
-                <i class="bi bi-grid-fill mr-1"></i> Semua
-            </button>
-            @foreach($products->pluck('category.name', 'category_id')->unique()->filter() as $catId => $catName)
-            <button @click="activeCat='{{ $catId }}'; filterByCategory('{{ $catId }}')"
-                    :class="activeCat==='{{ $catId }}' ? 'bg-primary-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
-                    class="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0">
-                {{ $catName }}
-            </button>
-            @endforeach
-        </div>
+            <!-- Category pills -->
+            <div class="flex gap-1.5 mb-3 overflow-x-auto pb-1" x-data="{ activeCat: 'all' }">
+                <button @click="activeCat='all'; filterByCategory('all')"
+                        :class="activeCat==='all' ? 'bg-primary-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
+                        class="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0">
+                    <i class="bi bi-grid-fill mr-1"></i> Semua
+                </button>
+                @foreach($products->pluck('category.name', 'category_id')->unique()->filter() as $catId => $catName)
+                <button @click="activeCat='{{ $catId }}'; filterByCategory('{{ $catId }}')"
+                        :class="activeCat==='{{ $catId }}' ? 'bg-primary-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
+                        class="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0">
+                    {{ $catName }}
+                </button>
+                @endforeach
+            </div>
 
-        <!-- Product grid -->
-        <div class="flex-1 overflow-y-auto rounded-xl">
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3" id="productGrid">
-                @foreach($products as $product)
-                <div class="product-card-item"
-                     data-name="{{ strtolower($product->name) }}"
-                     data-code="{{ strtolower($product->code) }}"
-                     data-barcode="{{ strtolower($product->barcode ?? '') }}"
-                     data-category="{{ $product->category_id }}">
-                    <div class="pos-product-card group cursor-pointer"
-                         @click="addToCart({{ $product->id }}, '{{ addslashes($product->name) }}', {{ $product->selling_price }}, {{ $product->stock }})">
-                        <div class="relative">
-                            @if($product->photo)
-                                <img src="{{ asset('storage/'.$product->photo) }}" class="w-full h-24 object-cover">
-                            @else
-                                <div class="w-full h-24 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                                    <i class="bi bi-box-seam text-3xl text-slate-300"></i>
+            <!-- Product grid -->
+            <div class="flex-1 overflow-y-auto rounded-xl">
+                <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2" id="productGrid">
+                    @foreach($products as $product)
+                    <div class="product-card-item"
+                         data-name="{{ strtolower($product->name) }}"
+                         data-code="{{ strtolower($product->code) }}"
+                         data-barcode="{{ strtolower($product->barcode ?? '') }}"
+                         data-category="{{ $product->category_id }}">
+                        <div class="pos-product-card group cursor-pointer"
+                             @click="addToCart({{ $product->id }})">
+                            <div class="relative">
+                                @if($product->photo)
+                                    <img src="{{ asset('storage/'.$product->photo) }}" class="w-full h-20 object-cover">
+                                @else
+                                    <div class="w-full h-20 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                                        <i class="bi bi-box-seam text-2xl text-slate-300"></i>
+                                    </div>
+                                @endif
+                                @if($product->stock <= 0)
+                                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                        <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">HABIS</span>
+                                    </div>
+                                @elseif($product->stock <= $product->min_stock)
+                                    <span class="absolute top-1.5 right-1.5 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                        {{ (int)$product->stock }}
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="p-2">
+                                <p class="text-xs font-medium text-slate-800 line-clamp-2 leading-tight mb-1">{{ $product->name }}</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-bold text-primary-600" x-text="formatPriceForProduct({{ $product->id }})"></span>
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium
+                                        {{ $product->stock <= 0 ? 'bg-red-50 text-red-600' : ($product->stock <= $product->min_stock ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600') }}">
+                                        {{ (int)$product->stock }}
+                                    </span>
                                 </div>
-                            @endif
-                            @if($product->stock <= 0)
-                                <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                    <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">HABIS</span>
-                                </div>
-                            @elseif($product->stock <= $product->min_stock)
-                                <span class="absolute top-1.5 right-1.5 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                                    {{ (int)$product->stock }}
-                                </span>
-                            @endif
-                        </div>
-                        <div class="p-2.5">
-                            <p class="text-xs font-medium text-slate-800 line-clamp-2 leading-tight mb-1.5">{{ $product->name }}</p>
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm font-bold text-primary-600">{{ formatRupiah($product->selling_price) }}</span>
-                                <span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium
-                                    {{ $product->stock <= 0 ? 'bg-red-50 text-red-600' : ($product->stock <= $product->min_stock ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600') }}">
-                                    {{ (int)$product->stock }}
-                                </span>
                             </div>
                         </div>
                     </div>
+                    @endforeach
                 </div>
-                @endforeach
-            </div>
-            <div x-show="filteredCount === 0" class="text-center py-12 text-slate-400" x-cloak>
-                <i class="bi bi-search text-4xl block mb-3"></i>
-                <p>Tidak ada produk ditemukan</p>
+                <div x-show="filteredCount === 0" class="text-center py-12 text-slate-400" x-cloak>
+                    <i class="bi bi-search text-4xl block mb-3"></i>
+                    <p>Tidak ada produk ditemukan</p>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Floating Cart Button -->
-    <button type="button" @click="cartModal = true"
-            class="fixed bottom-6 right-6 z-40 w-14 h-14 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center"
-            x-show="!cartModal">
-        <i class="bi bi-cart3 text-2xl"></i>
-        <span x-show="cart.length > 0" x-text="cart.length"
-              class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center"></span>
-    </button>
-
-    <!-- Cart Modal (fullscreen) -->
-    <div x-show="cartModal" x-cloak x-transition.opacity class="fixed inset-0 z-50 flex bg-white"
-         @keydown.escape.window="cartModal = false">
-        <div class="w-full h-full flex flex-col">
-            <div class="flex items-center justify-between px-5 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white shrink-0">
-                <div class="flex items-center gap-2">
-                    <i class="bi bi-cart3 text-lg"></i>
-                    <span class="font-bold">Keranjang</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="bg-white/20 text-white text-xs px-2 py-1 rounded-full" x-text="cart.length + ' item'"></span>
-                    <button @click="cartModal = false" class="text-white/80 hover:text-white"><i class="bi bi-x-lg"></i></button>
-                </div>
-            </div>
+        <!-- Right: cart panel -->
+        <div class="w-[340px] xl:w-[380px] border-l border-slate-200 bg-white flex flex-col shrink-0"
+             x-show="true">
             @include('pages.transaksi.pos._cart_form')
         </div>
     </div>
@@ -223,7 +208,7 @@
 </div>
 @push('scripts')
 @php
-$customersJson = $customers->map(function($c) { return ['id' => $c->id, 'name' => $c->name, 'code' => $c->code]; })->values()->toJson();
+$customersJson = $customers->map(function($c) { return ['id' => $c->id, 'name' => $c->name, 'code' => $c->code, 'type' => $c->type]; })->values()->toJson();
 @endphp
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -257,7 +242,12 @@ function posKasir() {
         custPickerModal: false,
         custPickerSearch: '',
         additionalDiscount: 0,
+        creditTerm: '2',
+        creditStartDate: '{{ now()->format('Y-m-d') }}',
+        creditDueDate: '',
+        posMode: '{{ request('mode', 'toko') }}',
         allCustomers: {!! $customersJson !!},
+        allProducts: {!! $productsJson !!},
         filteredCount: {{ $products->count() }},
 
         init() {
@@ -266,12 +256,14 @@ function posKasir() {
             this.updateTotals();
             let self = this;
             let accountPanel = document.getElementById('accountPanel');
+            let tempoPanel = document.getElementById('tempoPanel');
             let pmEl = document.getElementById('paymentMethod');
             if (pmEl) {
                 pmEl.addEventListener('change', function() {
                     let isCredit = this.options[this.selectedIndex].dataset.credit === '1';
                     let isCash = this.options[this.selectedIndex].textContent.trim() === 'Tunai';
                     if (accountPanel) accountPanel.style.display = isCash ? 'none' : '';
+                    if (tempoPanel) tempoPanel.style.display = isCredit ? '' : 'none';
                     if (isCredit) {
                         self.btnPayLabel = 'Proses Kredit';
                     } else {
@@ -280,6 +272,20 @@ function posKasir() {
                 });
                 pmEl.dispatchEvent(new Event('change'));
             }
+            this.$watch('selectedCust', () => self.onCustomerChange());
+        },
+
+        formatPriceForProduct(id) {
+            let p = this.allProducts.find(p => p.id === id);
+            if (!p) return 'Rp 0';
+            let price = this.posMode === 'reseller' ? p.wholesale_price : p.retail_price;
+            return 'Rp ' + Number(price).toLocaleString('id-ID');
+        },
+
+        getProductPrice(id) {
+            let product = this.allProducts.find(p => p.id === id);
+            if (!product) return 0;
+            return this.posMode === 'reseller' ? product.wholesale_price : product.retail_price;
         },
 
         filterProducts() {
@@ -306,41 +312,66 @@ function posKasir() {
             });
         },
 
-        searchCustomers(query) {
-            if (!query) return [];
-            let q = query.toLowerCase();
-            return this.allCustomers.filter(c =>
-                c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
-            );
-        },
-
         filteredCustPicker() {
             let q = (this.custPickerSearch || '').toLowerCase().trim();
-            if (!q) return this.allCustomers;
-            return this.allCustomers.filter(c =>
+            let targetType = this.posMode === 'reseller' ? 'wholesale' : 'retail';
+            let filtered = this.allCustomers.filter(c => c.type === targetType);
+            if (!q) return filtered;
+            return filtered.filter(c =>
                 c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
             );
         },
 
-        addToCart(id, name, price, stock) {
-            if (stock <= 0) {
+        addToCart(id) {
+            let product = this.allProducts.find(p => p.id === id);
+            if (!product) return;
+            if (product.stock <= 0) {
                 showToast('Stok habis', 'warning');
                 return;
             }
+            let price = this.posMode === 'reseller' ? product.wholesale_price : product.retail_price;
             let existing = this.cart.find(c => c.id === id);
             if (existing) {
-                if (existing.qty >= stock) {
-                    showToast('Stok tidak mencukupi (max ' + stock + ')', 'warning');
+                if (existing.qty >= product.stock) {
+                    showToast('Stok tidak mencukupi (max ' + product.stock + ')', 'warning');
                     return;
                 }
                 existing.qty++;
-                existing.total = existing.qty * existing.price - (existing.discount || 0);
+                existing.price = price;
+                existing.total = existing.qty * price - (existing.discount || 0);
             } else {
-                this.cart.push({ id, name, price, stock, qty: 1, discount: 0, total: price });
+                this.cart.push({ id, name: product.name, price, stock: product.stock, qty: 1, discount: 0, total: price });
             }
             this.renderCart();
             this.updateTotals();
-            showToast(name + ' ditambahkan', 'info');
+            showToast(product.name + ' ditambahkan', 'info');
+        },
+
+        onCustomerChange() {
+            if (this.cart.length === 0) return;
+            this.cart.forEach(item => {
+                let product = this.allProducts.find(p => p.id === item.id);
+                if (product) {
+                    item.price = this.posMode === 'reseller' ? product.wholesale_price : product.retail_price;
+                    item.total = item.qty * item.price - (item.discount || 0);
+                }
+            });
+            this.renderCart();
+            this.updateTotals();
+        },
+
+        getComputedDueDate() {
+            let weeks = parseInt(this.creditTerm);
+            if (!weeks || weeks < 1) return '';
+            let d = new Date();
+            d.setDate(d.getDate() + weeks * 7);
+            return d.toISOString().split('T')[0];
+        },
+
+        onCreditTermChange() {
+            if (this.creditTerm !== 'custom') {
+                this.creditDueDate = '';
+            }
         },
 
         updateQty(index, qty) {
@@ -393,7 +424,6 @@ function posKasir() {
             this.cart = [];
             this.renderCart();
             this.updateTotals();
-            this.cartModal = false;
             showToast('Keranjang dikosongkan', 'info');
         },
 
@@ -412,33 +442,33 @@ function posKasir() {
             let rows = this.cart.map((item, idx) => `
                 <tr class="cart-row">
                     <td class="text-[11px] py-1.5"><span class="font-medium">${item.name}</span><br><span class="text-[10px] text-slate-400">Rp ${item.price.toLocaleString('id-ID')}</span></td>
-                    <td class="text-[11px] py-1.5" style="width: 95px; min-width: 95px;">
+                    <td class="text-[11px] py-1.5" style="width: 85px; min-width: 85px;">
                         <div class="flex items-center gap-0.5">
                             <button type="button" @@click="updateQty(${idx}, ${item.qty - 1})" class="btn btn-sm btn-outline-secondary p-0 w-5 h-5 flex items-center justify-center"><i class="bi bi-dash text-xs"></i></button>
                             <input type="text" value="${item.qty.toLocaleString('id-ID')}" inputmode="numeric"
                                    @@focus="formatInput($event.target, 'raw')"
                                    @@blur="formatInput($event.target, 'currency')"
                                    @@change="updateQty(${idx}, $event.target.value.replace(/\D/g, ''))"
-                                   class="form-input text-center text-[11px]" style="width: 45px; min-width: 45px; padding: 1px 3px;">
+                                   class="form-input text-center text-[11px]" style="width: 40px; min-width: 40px; padding: 1px 3px;">
                             <button type="button" @@click="updateQty(${idx}, ${item.qty + 1})" class="btn btn-sm btn-outline-secondary p-0 w-5 h-5 flex items-center justify-center"><i class="bi bi-plus text-xs"></i></button>
                         </div>
                     </td>
-                    <td class="text-[11px] py-1.5" style="width: 90px; min-width: 90px;">
+                    <td class="text-[11px] py-1.5" style="width: 80px; min-width: 80px;">
                         <input type="text" value="${item.price.toLocaleString('id-ID')}" inputmode="numeric"
                                @@focus="formatInput($event.target, 'raw')"
                                @@blur="formatInput($event.target, 'currency')"
                                @@change="updatePrice(${idx}, $event.target.value.replace(/\D/g, ''))"
-                               class="form-input text-center text-[11px]" style="width: 80px; min-width: 80px; padding: 1px 3px;">
+                               class="form-input text-center text-[11px]" style="width: 70px; min-width: 70px; padding: 1px 3px;">
                     </td>
-                    <td class="text-[11px] py-1.5" style="width: 65px; min-width: 65px;">
+                    <td class="text-[11px] py-1.5" style="width: 55px; min-width: 55px;">
                         <input type="text" value="${(item.discount || 0).toLocaleString('id-ID')}" inputmode="numeric"
                                @@focus="formatInput($event.target, 'raw')"
                                @@blur="formatInput($event.target, 'currency')"
                                @@change="updateDiscount(${idx}, $event.target.value.replace(/\D/g, ''))"
-                               class="form-input text-center text-[11px]" style="width: 55px; min-width: 55px; padding: 1px 3px;">
+                               class="form-input text-center text-[11px]" style="width: 50px; min-width: 50px; padding: 1px 3px;">
                     </td>
                     <td class="text-[11px] py-1.5 text-right font-medium">${Math.max(0, item.total).toLocaleString('id-ID')}</td>
-                    <td class="text-center py-1.5" style="width: 28px;">
+                    <td class="text-center py-1.5" style="width: 24px;">
                         <button type="button" @@click="removeFromCart(${idx})" class="btn btn-sm btn-outline-danger p-0 w-5 h-5 flex items-center justify-center"><i class="bi bi-trash text-[10px]"></i></button>
                     </td>
                 </tr>

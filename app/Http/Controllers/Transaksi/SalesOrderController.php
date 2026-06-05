@@ -62,7 +62,7 @@ class SalesOrderController extends Controller
 
     public function create()
     {
-        $customers = Customer::active()->pluck('name', 'id');
+        $customers = Customer::active()->get();
         $products = Product::active()->get();
         $prefix = CompanySetting::first()->doc_prefix_so ?? 'SO';
         $documentNumber = $prefix.'-'.now()->format('Ymd').'-'.str_pad((SalesOrder::withTrashed()->count() + 1), 4, '0', STR_PAD_LEFT);

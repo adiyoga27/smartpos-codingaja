@@ -1,5 +1,12 @@
 <form action="{{ route('transaksi.sales.store') }}" method="POST" id="posForm" data-noloading="true" class="flex flex-col flex-1 min-h-0">
     @csrf
+    <div class="bg-gradient-to-r from-primary-600 to-primary-700 px-4 py-2.5 text-white shrink-0 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <i class="bi bi-cart3"></i>
+            <span class="font-bold text-sm">Keranjang</span>
+        </div>
+        <span class="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full" x-text="cart.length + ' item'"></span>
+    </div>
     <div class="overflow-y-auto flex-1">
         <table class="table mb-0 w-full" id="cartTable">
             <thead class="sticky top-0 z-10 bg-slate-50">
@@ -37,7 +44,7 @@
                 <button type="button" @click="selectedCust = null" x-show="selectedCust" class="text-red-400 hover:text-red-600 p-0.5" title="Hapus customer">
                     <i class="bi bi-x-circle text-xs"></i>
                 </button>
-                <button type="button" @click="customerModal = true; customerForm = { name: '', phone: '', type: 'retail' }" class="btn btn-sm btn-primary p-0 w-6 h-6 flex items-center justify-center rounded-full" title="Tambah Customer">
+                <button type="button" @click="customerModal = true; customerForm = { name: '', phone: '', type: posMode === 'reseller' ? 'wholesale' : 'retail' }" class="btn btn-sm btn-primary p-0 w-6 h-6 flex items-center justify-center rounded-full" title="Tambah Customer">
                     <i class="bi bi-plus text-xs"></i>
                 </button>
             </div>
@@ -79,12 +86,40 @@
             </select>
         </div>
 
+        <div id="tempoPanel" style="display:none;" class="space-y-1.5">
+            <label class="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Jatuh Tempo</label>
+            <select x-model="creditTerm" @change="onCreditTermChange()" class="form-select text-xs py-1.5">
+                <option value="1">1 Minggu</option>
+                <option value="2">2 Minggu</option>
+                <option value="3">3 Minggu</option>
+                <option value="4">4 Minggu</option>
+                <option value="custom">Custom</option>
+            </select>
+            <div x-show="creditTerm === 'custom'" class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="text-[10px] text-slate-400">Tgl Mulai</label>
+                    <div class="relative">
+                        <i class="bi bi-calendar3 absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                        <input type="date" x-model="creditStartDate" class="form-input text-xs py-1.5 pl-7" value="{{ now()->format('Y-m-d') }}">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] text-slate-400">Tgl Jatuh Tempo</label>
+                    <div class="relative">
+                        <i class="bi bi-calendar3 absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                        <input type="date" x-model="creditDueDate" class="form-input text-xs py-1.5 pl-7">
+                    </div>
+                </div>
+            </div>
+            <input type="hidden" name="due_date" :value="creditTerm !== 'custom' ? getComputedDueDate() : creditDueDate">
+        </div>
+
         <div>
             <label class="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Diskon / Catatan</label>
             <div class="flex gap-2 mt-0.5">
-                <input type="number" x-model.number="additionalDiscount" class="form-input text-xs font-mono py-1.5 w-28" value="0"
+                <input type="number" x-model.number="additionalDiscount" class="form-input text-xs font-mono py-1.5 w-20" value="0"
                        @input="updateTotals()" placeholder="Diskon"/>
-                <textarea name="notes" class="form-input text-xs flex-1 py-1.5" rows="1" placeholder="Catatan..."></textarea>
+                <textarea name="notes" class="form-input text-xs flex-1 py-1.5 min-w-0" rows="2" placeholder="Catatan..."></textarea>
             </div>
         </div>
 

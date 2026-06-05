@@ -22,8 +22,14 @@ use Illuminate\Support\Facades\DB;
 
 class SaleController extends Controller
 {
-    public function kasir()
+    public function kasir(Request $request)
     {
+        $mode = $request->query('mode');
+
+        if (! in_array($mode, ['toko', 'reseller'])) {
+            return view('pages.transaksi.pos.mode');
+        }
+
         $customers = Customer::active()->get();
         $products = Product::active()->with('category')
             ->orderByRaw('CASE WHEN stock > 0 THEN 0 ELSE 1 END')
@@ -40,8 +46,18 @@ class SaleController extends Controller
         $paymentMethods = PaymentMethod::active()->where('is_available_pos', true)->get();
         $prefix = CompanySetting::first()->doc_prefix_inv ?? 'INV';
         $invoiceNumber = $prefix.'-'.now()->format('Ymd').'-'.strtoupper(substr(uniqid(), -5));
+        $productsJson = $products->map(function ($p) {
+            return [
+                'id' => $p->id,
+                'name' => $p->name,
+                'code' => $p->code,
+                'retail_price' => (float) $p->selling_price,
+                'wholesale_price' => (float) $p->wholesale_price,
+                'stock' => (float) $p->stock,
+            ];
+        })->values()->toJson();
 
-        return view('pages.transaksi.pos.kasir', compact('customers', 'products', 'taxes', 'defaultTax', 'cashAccounts', 'defaultCashAccount', 'cashAccountsJson', 'paymentMethods', 'invoiceNumber'));
+        return view('pages.transaksi.pos.kasir', compact('customers', 'products', 'productsJson', 'taxes', 'defaultTax', 'cashAccounts', 'defaultCashAccount', 'cashAccountsJson', 'paymentMethods', 'invoiceNumber'));
     }
 
     public function store(Request $request)
@@ -60,6 +76,7 @@ class SaleController extends Controller
             'paid_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'total_discount' => 'nullable|numeric|min:0',
+            'due_date' => 'nullable|date',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|numeric|min:0.01',
@@ -149,7 +166,7 @@ class SaleController extends Controller
                     'customer_id' => $validated['customer_id'],
                     'sale_id' => $sale->id,
                     'document_number' => $sale->invoice_number,
-                    'due_date' => now()->addDays(30),
+                    'due_date' => $validated['due_date'] ?? now()->addDays(30),
                     'amount' => $total,
                     'paid_amount' => 0,
                     'remaining_amount' => $total,

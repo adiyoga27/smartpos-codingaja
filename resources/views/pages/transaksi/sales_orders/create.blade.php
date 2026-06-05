@@ -18,9 +18,9 @@
                 </div>
                 <div>
                     <label class="form-label text-xs">Customer</label>
-                    <select name="customer_id" class="form-select form-select-sm select2" required>
+                    <select name="customer_id" class="form-select form-select-sm select2" required id="soCustomer">
                         <option value="">- Pilih Customer -</option>
-                        @foreach($customers as $id => $name)<option value="{{ $id }}">{{ $name }}</option>@endforeach
+                        @foreach($customers as $c)<option value="{{ $c->id }}" data-type="{{ $c->type }}">{{ $c->name }}</option>@endforeach
                     </select>
                 </div>
                 <div>
@@ -42,7 +42,15 @@
     <div class="card mb-4">
         <div class="card-header flex flex-wrap items-center justify-between gap-2">
             <h6 class="mb-0"><i class="bi bi-list-check text-primary-500 me-1"></i> Item SO</h6>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
+                    <button type="button" @click="posMode = 'toko'; onModeChange()"
+                            :class="posMode === 'toko' ? 'bg-white shadow text-blue-700 font-semibold' : 'text-slate-500 hover:text-slate-700'"
+                            class="px-3 py-1 rounded-md text-xs transition-all duration-150">Toko</button>
+                    <button type="button" @click="posMode = 'reseller'; onModeChange()"
+                            :class="posMode === 'reseller' ? 'bg-white shadow text-purple-700 font-semibold' : 'text-slate-500 hover:text-slate-700'"
+                            class="px-3 py-1 rounded-md text-xs transition-all duration-150">Reseller</button>
+                </div>
                 <span class="text-xs text-slate-400" x-text="itemCount()"></span>
                 <button type="button" class="btn btn-primary btn-sm rounded-full px-4 shadow-sm" @click="showModal = true">
                     <i class="bi bi-plus-lg"></i> Tambah Produk
@@ -130,22 +138,22 @@
             </div>
         </div>
         <div class="overflow-y-auto p-3 flex-1">
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-                        <template x-for="p in filteredProducts()" :key="p.id">
-                            <div class="border border-slate-200 rounded-xl p-2.5 cursor-pointer hover:border-rose-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                                 @click="addProduct(p); $el.style.transform='scale(0.95)'; setTimeout(() => $el.style.transform='', 100)">
-                                <div class="w-full aspect-[4/3] rounded-lg bg-slate-100 flex items-center justify-center mb-2 overflow-hidden">
-                                    <img :src="p.photo" class="w-full h-full object-cover" x-show="p.photo">
-                                    <i class="bi bi-box-seam text-2xl text-slate-300" x-show="!p.photo"></i>
-                                </div>
-                                <p class="text-[11px] font-semibold text-slate-700 line-clamp-2 leading-tight mb-1" x-text="p.name"></p>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-[10px] text-slate-400" x-text="p.code"></span>
-                                    <span class="text-[11px] font-bold text-primary-600" x-text="formatRp(p.price)"></span>
-                                </div>
-                            </div>
-                        </template>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+                <template x-for="p in filteredProducts()" :key="p.id">
+                    <div class="border border-slate-200 rounded-xl p-2.5 cursor-pointer hover:border-rose-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                         @click="addProduct(p); $el.style.transform='scale(0.95)'; setTimeout(() => $el.style.transform='', 100)">
+                        <div class="w-full aspect-[4/3] rounded-lg bg-slate-100 flex items-center justify-center mb-2 overflow-hidden">
+                            <img :src="p.photo" class="w-full h-full object-cover" x-show="p.photo">
+                            <i class="bi bi-box-seam text-2xl text-slate-300" x-show="!p.photo"></i>
+                        </div>
+                        <p class="text-[11px] font-semibold text-slate-700 line-clamp-2 leading-tight mb-1" x-text="p.name"></p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] text-slate-400" x-text="p.code"></span>
+                            <span class="text-[11px] font-bold text-primary-600" x-text="formatRp(getPrice(p))"></span>
+                        </div>
                     </div>
+                </template>
+            </div>
             <div class="text-center py-10 text-slate-400" x-show="filteredProducts().length === 0">
                 <i class="bi bi-search text-3xl block mb-2"></i>
                 <span class="text-sm">Produk tidak ditemukan</span>
@@ -161,7 +169,39 @@ document.addEventListener('alpine:init', () => {
         selectedItems: {},
         showModal: false,
         searchQuery: '',
-        products: {!! $products->map(fn($p) => ['id' => $p->id, 'name' => $p->name, 'code' => $p->code, 'price' => (float) $p->selling_price, 'photo' => $p->photo ? asset('storage/'.$p->photo) : ''])->values()->toJson() !!},
+        posMode: 'toko',
+        products: {!! $products->map(fn($p) => ['id' => $p->id, 'name' => $p->name, 'code' => $p->code, 'retail_price' => (float) $p->selling_price, 'wholesale_price' => (float) $p->wholesale_price, 'photo' => $p->photo ? asset('storage/'.$p->photo) : ''])->values()->toJson() !!},
+
+        init() {
+            this.filterCustomersByMode();
+        },
+
+        filterCustomersByMode() {
+            let targetType = this.posMode === 'reseller' ? 'wholesale' : 'retail';
+            let sel = document.getElementById('soCustomer');
+            if (!sel) return;
+            let currentVal = sel.value;
+            Array.from(sel.options).forEach(opt => {
+                if (!opt.value) return;
+                opt.style.display = opt.dataset.type === targetType ? '' : 'none';
+            });
+            if (currentVal) {
+                let stillVisible = Array.from(sel.options).some(o => o.value === currentVal && o.style.display !== 'none');
+                if (!stillVisible) sel.value = '';
+            }
+        },
+
+        getPrice(product) {
+            return this.posMode === 'reseller' ? product.wholesale_price : product.retail_price;
+        },
+
+        onModeChange() {
+            this.filterCustomersByMode();
+            Object.values(this.selectedItems).forEach(it => {
+                let prod = this.products.find(p => p.id === it.id);
+                if (prod) it.price = this.getPrice(prod);
+            });
+        },
 
         itemCount() { let n = Object.keys(this.selectedItems).length; return n + ' item'; },
         subtotal() { return Object.values(this.selectedItems).reduce((s, it) => s + it.qty * it.price, 0); },
@@ -190,10 +230,12 @@ document.addEventListener('alpine:init', () => {
         filteredProducts() { return this.filterProducts(); },
 
         addProduct(p) {
+            let price = this.getPrice(p);
             if (this.selectedItems[p.id]) {
                 this.selectedItems[p.id].qty += 1;
+                this.selectedItems[p.id].price = price;
             } else {
-                this.selectedItems[p.id] = { ...p, qty: 1, discount: 0 };
+                this.selectedItems[p.id] = { id: p.id, name: p.name, code: p.code, photo: p.photo, price: price, qty: 1, discount: 0 };
             }
             this.showModal = false;
         },
