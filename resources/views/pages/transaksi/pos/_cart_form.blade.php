@@ -7,7 +7,8 @@
         </div>
         <span class="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full" x-text="cart.length + ' item'"></span>
     </div>
-    <div class="overflow-y-auto flex-1">
+    <div class="overflow-y-auto flex-1 flex flex-col">
+        <div class="flex-1">
         <table class="table mb-0 w-full" id="cartTable">
             <thead class="sticky top-0 z-10 bg-slate-50">
                 <tr>
@@ -26,10 +27,10 @@
             <p class="text-sm">Keranjang kosong</p>
             <p class="text-xs mt-1">Klik produk untuk menambahkan</p>
         </div>
-    </div>
+        </div>
 
-    <div class="border-t border-slate-200 bg-slate-50/70 px-4 py-2.5 space-y-2 shrink-0">
-        <input type="hidden" name="invoice_number" value="{{ $invoiceNumber }}">
+        <div class="border-t border-slate-200 bg-slate-50/70 px-4 py-2.5 space-y-2 shrink-0 mt-auto">
+            <input type="hidden" name="invoice_number" value="{{ $invoiceNumber }}">
         <input type="hidden" name="sale_date" value="{{ now()->format('Y-m-d') }}">
 
         <div>
@@ -140,22 +141,25 @@
                 <span class="text-slate-500">Diskon Tambahan</span>
                 <span class="text-red-500 font-medium" id="cartAddDisc">Rp 0</span>
             </div>
-            <div class="flex justify-between items-center pt-1.5 border-t-2 border-slate-200">
-                <span class="text-sm font-bold text-slate-800">TOTAL</span>
-                <span class="text-lg font-extrabold text-primary-700" id="cartTotal">Rp 0</span>
             </div>
-            <div class="flex justify-between text-[11px]" id="changeRow" style="display:none;">
-                <span class="text-slate-500">Kembalian</span>
-                <span class="font-medium text-emerald-600" id="changeAmount">Rp 0</span>
-            </div>
+            <input type="hidden" name="total_discount" id="totalAddDisc" value="0">
         </div>
-        <input type="hidden" name="total_discount" id="totalAddDisc" value="0">
+    </div>
 
+    <div class="border-t border-slate-200 bg-white p-3 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20 relative">
+        <div class="flex justify-between items-center mb-1">
+            <span class="text-sm font-bold text-slate-800">TOTAL</span>
+            <span class="text-xl font-extrabold text-primary-700" id="cartTotal">Rp 0</span>
+        </div>
+        <div class="flex justify-between text-xs mb-2" id="changeRow" style="display:none;">
+            <span class="text-slate-500 font-medium">Kembalian</span>
+            <span class="font-bold text-emerald-600" id="changeAmount">Rp 0</span>
+        </div>
         <div class="flex gap-2">
-            <button type="button" class="btn btn-primary btn-md flex-1" id="btnPay" disabled
+            <button type="button" class="btn btn-primary btn-md flex-1 text-sm" id="btnPay" disabled
                     @click="handleCheckout()" :disabled="cart.length === 0 || loading">
                 <span x-show="!loading"><i class="bi bi-cash-coin"></i> <span x-text="btnPayLabel"></span></span>
-                <span x-show="loading" class="flex items-center gap-2">
+                <span x-show="loading" class="flex items-center gap-2 justify-center">
                     <span class="spinner-border spinner-border-sm"></span> Memproses...
                 </span>
             </button>

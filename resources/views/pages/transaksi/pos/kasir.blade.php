@@ -33,9 +33,9 @@
     </div>
 
     <!-- Main: split panel -->
-    <div class="flex-1 flex min-h-0">
+    <div class="flex-1 flex flex-col md:flex-row min-h-0">
         <!-- Left: product grid -->
-        <div class="flex-1 flex flex-col p-3 min-w-0">
+        <div class="flex-1 flex flex-col p-3 min-w-0 min-h-0">
             <div class="flex gap-2 mb-3">
                 <div class="relative flex-1">
                     <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -111,7 +111,7 @@
         </div>
 
         <!-- Right: cart panel -->
-        <div class="w-[340px] xl:w-[380px] border-l border-slate-200 bg-white flex flex-col shrink-0"
+        <div class="w-full md:w-[360px] lg:w-[400px] xl:w-[450px] h-[50vh] md:h-auto border-t md:border-t-0 md:border-l border-slate-200 bg-white flex flex-col shrink-0 min-h-0"
              x-show="true">
             @include('pages.transaksi.pos._cart_form')
         </div>
