@@ -117,12 +117,12 @@
                     <i class="bi bi-chevron-down text-xs transition-transform duration-200" :class="openMenus.penjualan && 'rotate-180'"></i>
                 </button>
                 <div x-show="openMenus.penjualan" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="ml-4 mt-1 space-y-0.5">
-                    @can('view_sales_order')
+                    {{-- @can('view_sales_order')
                     <a href="{{ route('transaksi.sales_orders.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('transaksi.sales_orders.*') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">Sales Order</a>
                     @endcan
                     @can('view_sales_order')
                     <a href="{{ route('transaksi.delivery_orders.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('transaksi.delivery_orders.*') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">Delivery Order</a>
-                    @endcan
+                    @endcan --}}
                     @can('view_sale')
                     <a href="{{ route('pos.kasir') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('pos.kasir') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">POS Kasir</a>
                     @endcan

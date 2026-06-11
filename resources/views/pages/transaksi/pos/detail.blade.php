@@ -14,8 +14,7 @@
         <p class="text-sm text-slate-400">{{ $sale->invoice_number }}</p>
     </div>
     <div class="flex gap-2">
-        <a href="{{ route('pos.print-a4', $sale) }}" target="_blank" class="btn btn-primary btn-sm"><i class="bi bi-printer"></i> Cetak A4</a>
-        <a href="{{ route('pos.print-thermal', $sale) }}" target="_blank" class="btn btn-secondary btn-sm"><i class="bi bi-receipt"></i> Thermal</a>
+        <a href="{{ route('pos.print-epson', $sale) }}" target="_blank" class="btn btn-primary btn-sm"><i class="bi bi-printer"></i> Cetak</a>
         <a href="{{ route('pos.riwayat') }}" class="btn btn-secondary btn-sm"><i class="bi bi-arrow-left"></i> Kembali</a>
     </div>
 </div>

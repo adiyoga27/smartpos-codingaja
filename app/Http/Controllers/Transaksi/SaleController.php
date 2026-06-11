@@ -269,16 +269,13 @@ class SaleController extends Controller
             $data = $query->skip($start)->take($length)->get()->map(function ($item) {
                 $statusBadge = match ($item->status) {
                     'paid' => '<span class="badge bg-success">Lunas</span>',
-                    'partial' => '<span class="badge bg-warning">Sebagian</span>',
-                    'unpaid' => '<span class="badge bg-danger">Belum Bayar</span>',
-                    default => '<span class="badge bg-secondary">Batal</span>',
+                    default => '<span class="badge bg-danger">Belum Lunas</span>',
                 };
 
                 $actions = '';
                 if (auth()->user()->can('view_sale')) {
                     $actions .= '<div class="flex gap-1">'
-                        .'<a href="'.route('pos.print-a4', $item).'" target="_blank" class="btn btn-sm btn-outline-primary" title="Cetak A4"><i class="bi bi-printer"></i></a>'
-                        .'<a href="'.route('pos.print-thermal', $item).'" target="_blank" class="btn btn-sm btn-outline-secondary" title="Cetak Thermal"><i class="bi bi-receipt"></i></a>'
+                        .'<a href="'.route('pos.print-epson', $item).'" target="_blank" class="btn btn-sm btn-outline-dark" title="Cetak"><i class="bi bi-printer-fill"></i></a>'
                         .'<a href="'.route('pos.detail', $item).'" target="_blank" class="btn btn-sm btn-outline-info" title="Detail"><i class="bi bi-eye"></i></a>';
                     if (auth()->user()->can('edit_sale')) {
                         $actions .= '<a href="'.route('pos.edit', $item).'" class="btn btn-sm btn-outline-warning" title="Edit"><i class="bi bi-pencil"></i></a>';
@@ -374,6 +371,7 @@ class SaleController extends Controller
                     'status' => $sale->status,
                     'print_a4' => route('pos.print-a4', $sale),
                     'print_thermal' => route('pos.print-thermal', $sale),
+                    'print_epson' => route('pos.print-epson', $sale),
                 ];
             });
 
