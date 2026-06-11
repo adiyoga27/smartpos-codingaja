@@ -63,6 +63,7 @@ class PayableController extends Controller
 
     public function payForm(Payable $payable)
     {
+        $payable->load('payments.cashAccount');
         $cashAccounts = CashAccount::active()->get();
 
         return view('pages.keuangan.payables.pay', compact('payable', 'cashAccounts'));
