@@ -84,6 +84,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('payables/create', [PayableController::class, 'create'])->name('payables.create');
         Route::post('payables', [PayableController::class, 'store'])->name('payables.store');
         Route::get('payables', [PayableController::class, 'index'])->name('payables.index');
+        Route::get('payables/{payable}', [PayableController::class, 'show'])->name('payables.show');
         Route::get('payables/{payable}/pay', [PayableController::class, 'payForm'])->name('payables.pay');
         Route::post('payables/{payable}/pay', [PayableController::class, 'payStore'])->name('payables.pay.store');
         Route::get('receivables/create', [ReceivableController::class, 'create'])->name('receivables.create');

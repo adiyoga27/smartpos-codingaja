@@ -38,10 +38,12 @@ class PayableController extends Controller
                     'paid' => '<span class="badge bg-success">Lunas</span>',
                     default => '<span class="badge bg-danger">Jatuh Tempo</span>',
                 };
-                $actions = '';
+                $actions = '<div class="flex gap-1 justify-center">';
+                $actions .= '<a href="'.route('keuangan.payables.show', $item).'" class="btn btn-sm btn-info" title="Detail"><i class="bi bi-eye"></i></a>';
                 if ($item->remaining_amount > 0) {
-                    $actions = '<a href="'.route('keuangan.payables.pay', $item).'" class="btn btn-sm btn-primary"><i class="bi bi-cash"></i> Bayar</a>';
+                    $actions .= '<a href="'.route('keuangan.payables.pay', $item).'" class="btn btn-sm btn-primary"><i class="bi bi-cash"></i> Bayar</a>';
                 }
+                $actions .= '</div>';
 
                 return [
                     $item->document_number,
@@ -161,5 +163,11 @@ class PayableController extends Controller
         ]);
 
         return redirect()->route('keuangan.payables.index')->with('success', 'Hutang manual berhasil ditambahkan.');
+    }
+
+    public function show(Payable $payable)
+    {
+        $payable->load('supplier', 'purchase', 'payments.cashAccount');
+        return view('pages.keuangan.payables.show', compact('payable'));
     }
 }
