@@ -98,7 +98,8 @@
                 </button>
                 <div x-show="openMenus.pembelian" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="ml-4 mt-1 space-y-0.5">
                     @can('view_purchase')
-                    <a href="{{ route('transaksi.purchases.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('transaksi.purchases.*') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">Pembelian</a>
+                    <a href="{{ route('transaksi.purchases.index', ['type' => 'po']) }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('transaksi.purchases.*') && !request()->routeIs('transaksi.purchases.direct') && request('type') !== 'direct' ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">Purchase Order</a>
+                    <a href="{{ route('transaksi.purchases.index', ['type' => 'direct']) }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('transaksi.purchases.direct') || (request()->routeIs('transaksi.purchases.index') && request('type') == 'direct') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">Pembelian Langsung</a>
                     @endcan
                     @can('view_purchase_return')
                     <a href="{{ route('transaksi.purchase_returns.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('transaksi.purchase_returns.*') ? 'bg-sidebar-active text-white' : 'text-slate-400 hover:text-white hover:bg-sidebar-hover' }}">Return Pembelian</a>

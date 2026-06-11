@@ -1,15 +1,20 @@
 @extends('layouts.app')
-@section('title', 'Pembelian')
+@php $isDirect = request('type') === 'direct'; @endphp
+@section('title', $isDirect ? 'Pembelian Langsung' : 'Purchase Order')
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('transaksi.purchases.index') }}">Transaksi</a></li>
-    <li class="breadcrumb-item active">Pembelian</li>
+    <li class="breadcrumb-item active">{{ $isDirect ? 'Pembelian Langsung' : 'Purchase Order' }}</li>
 @endsection
 @section('content')
 <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
-    <h4 class="font-bold mb-0">Purchase Order</h4>
+    <h4 class="font-bold mb-0">{{ $isDirect ? 'Pembelian Langsung' : 'Purchase Order' }}</h4>
     <div class="flex gap-2">
+        @if($isDirect)
+        <a href="{{ route('transaksi.purchases.direct') }}" class="btn btn-success btn-md"><i class="bi bi-cart-check"></i> Buat Pembelian Langsung</a>
+        @else
         <a href="{{ route('transaksi.purchases.create') }}" class="btn btn-primary btn-md"><i class="bi bi-plus-lg"></i> Buat PO</a>
         <a href="{{ route('transaksi.purchases.direct') }}" class="btn btn-success btn-md"><i class="bi bi-cart-check"></i> Pembelian Langsung</a>
+        @endif
     </div>
 </div>
 <div class="card">
@@ -17,7 +22,14 @@
         <div class="overflow-x-auto">
             <table class="table table-striped" id="purchases-table" style="width:100%">
                 <thead>
-                    <tr><th>No. PO</th><th>Supplier</th><th>Tanggal</th><th>Total</th><th>Status</th><th>Aksi</th></tr>
+                    <tr>
+                        <th>No. PO</th><th>Supplier</th><th>Tanggal</th><th>Total</th>
+                        @if($isDirect)
+                        <th>Status</th><th>Aksi</th>
+                        @else
+                        <th>Stok Terima</th><th>Sisa Hutang</th><th>Status</th><th>Aksi</th>
+                        @endif
+                    </tr>
                 </thead>
             </table>
         </div>
@@ -30,7 +42,10 @@ $(document).ready(function() {
     $('#purchases-table').DataTable({
         processing: true,
         serverSide: true,
-        ajax: '{{ route('transaksi.purchases.index') }}',
+        ajax: {
+            url: '{{ route('transaksi.purchases.index') }}',
+            data: function(d) { d.type = '{{ request('type', '') }}'; }
+        },
         pageLength: 25,
         dom: 'Bfrtip',
         buttons: [
@@ -44,7 +59,7 @@ $(document).ready(function() {
             url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json'
         },
         columnDefs: [
-            { orderable: false, targets: [4, 5] }
+            { orderable: false, targets: {{ $isDirect ? '[4,5]' : '[4,5,6,7]' }} }
         ]
     });
 });

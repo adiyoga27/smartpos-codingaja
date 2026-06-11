@@ -24,38 +24,90 @@ class PurchaseController extends Controller
     {
         if ($request->ajax()) {
             $query = Purchase::with('supplier')->latest();
+
+            if ($request->filled('type') && $request->type === 'direct') {
+                $query->where('document_number', 'like', '%-DIRECT-%');
+            } elseif ($request->filled('type') && $request->type === 'po') {
+                $query->where('document_number', 'not like', '%-DIRECT-%');
+            }
+
             $draw = (int) $request->input('draw', 1);
             $start = (int) $request->input('start', 0);
             $length = (int) $request->input('length', 25);
             $search = $request->input('search.value', '');
+            $isPO = $request->filled('type') && $request->type === 'po';
 
-            $total = $query->count();
+            $total = Purchase::count();
             if ($search) {
                 $query->where('document_number', 'like', '%'.$search.'%');
             }
             $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
-                $statusBadge = match ($item->status) {
-                    'draft' => '<span class="badge bg-secondary">Draft</span>',
-                    'sent' => '<span class="badge bg-info">Dikirim</span>',
-                    'partial' => '<span class="badge bg-warning">Sebagian</span>',
-                    'completed' => '<span class="badge bg-success">Selesai</span>',
-                    default => '<span class="badge bg-danger">Batal</span>',
-                };
-                $actions = '<a href="'.route('transaksi.purchases.show', $item).'" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>'
-                    .'<a href="'.route('transaksi.purchases.print', $item).'" target="_blank" class="btn btn-sm btn-warning"><i class="bi bi-printer"></i></a>';
-                if (! in_array($item->status, ['completed', 'cancelled'])) {
-                    $actions .= '<form action="'.route('transaksi.purchases.destroy', $item).'" method="POST" class="d-inline" onsubmit="return confirm(\'Hapus PO ini?\')">'.csrf_field().method_field('DELETE').'<button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button></form>';
+
+            if ($isPO) {
+                $query->with('items');
+            }
+
+            $data = $query->skip($start)->take($length)->get()->map(function ($item) use ($isPO) {
+                $isPaid = $item->paid_amount >= $item->total;
+                $statusBadge = $isPaid
+                    ? '<span class="badge bg-success">Lunas</span>'
+                    : '<span class="badge bg-danger">Belum Lunas</span>';
+
+                $detailUrl = route('transaksi.purchases.show', $item);
+                $printUrl = route('transaksi.purchases.print', $item);
+
+                if ($isPO) {
+                    $payUrl = route('transaksi.purchases.pay', $item);
+                    $receiveUrl = route('transaksi.purchases.receive.form', $item);
+                    $totalQty = $item->items->sum('quantity');
+                    $receivedQty = $item->items->sum('received_quantity');
+                    $allReceived = $receivedQty >= $totalQty;
+
+                    $actions = '<div class="flex gap-1">';
+                    if (! $isPaid) {
+                        $actions .= '<a href="'.$payUrl.'" class="btn btn-sm btn-success" title="Bayar"><i class="bi bi-cash-coin"></i></a>';
+                    }
+                    if (! $allReceived) {
+                        $actions .= '<a href="'.$receiveUrl.'" class="btn btn-sm btn-primary" title="Terima Barang"><i class="bi bi-box-arrow-in-down"></i></a>';
+                    }
+                    $actions .= '<a href="'.$detailUrl.'" class="btn btn-sm btn-info" title="Detail"><i class="bi bi-eye"></i></a>';
+                    $actions .= '<a href="'.$printUrl.'" target="_blank" class="btn btn-sm btn-warning" title="Print"><i class="bi bi-printer"></i></a>';
+                    if (! $isPaid && $item->status !== 'cancelled') {
+                        $actions .= '<form action="'.route('transaksi.purchases.destroy', $item).'" method="POST" class="d-inline" onsubmit="return confirm(\'Hapus PO ini?\')">'.csrf_field().method_field('DELETE').'<button class="btn btn-sm btn-danger" title="Hapus"><i class="bi bi-trash"></i></button></form>';
+                    }
+                    $actions .= '</div>';
+                } else {
+                    $actions = '<a href="'.$detailUrl.'" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>'
+                        .'<a href="'.$printUrl.'" target="_blank" class="btn btn-sm btn-warning"><i class="bi bi-printer"></i></a>';
+                    if (! $isPaid && $item->status !== 'cancelled') {
+                        $actions .= '<form action="'.route('transaksi.purchases.destroy', $item).'" method="POST" class="d-inline" onsubmit="return confirm(\'Hapus data ini?\')">'.csrf_field().method_field('DELETE').'<button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button></form>';
+                    }
                 }
 
-                return [
+                $row = [
                     $item->document_number,
                     $item->supplier?->name ?? '-',
                     $item->purchase_date->format('d/m/Y'),
                     formatRupiah($item->total),
-                    $statusBadge,
-                    $actions,
                 ];
+
+                if ($isPO) {
+                    $pct = $totalQty > 0 ? round(($receivedQty / $totalQty) * 100) : 0;
+                    $pctBadge = $pct >= 100
+                        ? '<span class="badge bg-success">'.$pct.'%</span>'
+                        : '<span class="badge bg-warning">'.$pct.'%</span>';
+
+                    $sisa = max(0, $item->total - $item->paid_amount);
+                    $sisaText = $sisa > 0 ? formatRupiah($sisa) : '<span class="text-success">Lunas</span>';
+
+                    $row[] = $pctBadge;
+                    $row[] = $sisaText;
+                }
+
+                $row[] = $statusBadge;
+                $row[] = $actions;
+
+                return $row;
             });
 
             return response()->json(['draw' => $draw, 'recordsTotal' => $total, 'recordsFiltered' => $filtered, 'data' => $data]);
@@ -134,14 +186,128 @@ class PurchaseController extends Controller
     public function show(Purchase $purchase)
     {
         $purchase->load('items.product', 'supplier', 'payables');
-        $cashAccounts = CashAccount::active()->get();
+        $receiveHistory = StockMutation::where('reference_type', Purchase::class)
+            ->where('reference_id', $purchase->id)
+            ->with('product', 'creator')
+            ->latest()
+            ->get();
+        $paymentHistory = CashTransaction::where('description', 'like', '%'.$purchase->document_number.'%')
+            ->with('cashAccount', 'creator')
+            ->latest()
+            ->get();
 
-        return view('pages.transaksi.purchases.show', compact('purchase', 'cashAccounts'));
+        return view('pages.transaksi.purchases.show', compact('purchase', 'receiveHistory', 'paymentHistory'));
+    }
+
+    public function payForm(Purchase $purchase)
+    {
+        $purchase->load('items.product', 'supplier');
+        $cashAccounts = CashAccount::active()->get();
+        $paymentHistory = CashTransaction::where('description', 'like', '%'.$purchase->document_number.'%')
+            ->with('cashAccount', 'creator')
+            ->latest()
+            ->get();
+
+        return view('pages.transaksi.purchases.pay', compact('purchase', 'cashAccounts', 'paymentHistory'));
+    }
+
+    public function payStore(Request $request, Purchase $purchase)
+    {
+        $validated = $request->validate([
+            'payments' => 'required|array|min:1',
+            'payments.*.cash_account_id' => 'required|exists:cash_accounts,id',
+            'payments.*.amount' => 'required|numeric|min:500',
+        ]);
+
+        DB::transaction(function () use ($purchase, $validated) {
+            $newPaid = 0;
+            foreach ($validated['payments'] as $payment) {
+                $amount = (float) $payment['amount'];
+                $cashAccount = CashAccount::find($payment['cash_account_id']);
+                if ($cashAccount) {
+                    $cashAccount->current_balance -= $amount;
+                    $cashAccount->save();
+
+                    CashTransaction::create([
+                        'cash_account_id' => $cashAccount->id,
+                        'type' => 'out',
+                        'amount' => $amount,
+                        'transaction_date' => now(),
+                        'description' => 'Pembayaran PO '.$purchase->document_number,
+                        'created_by' => auth()->id(),
+                    ]);
+                }
+                $newPaid += $amount;
+            }
+            $purchase->paid_amount += $newPaid;
+            $purchase->save();
+
+            $remaining = max(0, $purchase->total - $purchase->paid_amount);
+
+            $payable = Payable::where('purchase_id', $purchase->id)->first();
+            if ($payable) {
+                $payable->update([
+                    'paid_amount' => $purchase->paid_amount,
+                    'remaining_amount' => $remaining,
+                    'status' => $remaining <= 0 ? 'paid' : 'partial',
+                ]);
+            } else {
+                $dueDate = $purchase->due_date ?? ($remaining > 0 ? now()->addDays(30)->format('Y-m-d') : null);
+                Payable::create([
+                    'supplier_id' => $purchase->supplier_id,
+                    'purchase_id' => $purchase->id,
+                    'document_number' => $purchase->document_number,
+                    'due_date' => $dueDate,
+                    'amount' => $purchase->total,
+                    'paid_amount' => $purchase->paid_amount,
+                    'remaining_amount' => $remaining,
+                    'status' => $remaining <= 0 ? 'paid' : 'partial',
+                ]);
+            }
+
+            $hutangAccount = Account::where('code', '2-1000')->first();
+            if ($hutangAccount) {
+                $journal = Journal::create([
+                    'journal_number' => 'JUR-'.now()->format('Ymd').'-'.str_pad((Journal::count() + 1), 4, '0', STR_PAD_LEFT),
+                    'journal_date' => now(),
+                    'description' => 'Jurnal pembayaran PO '.$purchase->document_number,
+                    'source' => 'purchase_payment',
+                    'reference_id' => $purchase->id,
+                    'reference_type' => Purchase::class,
+                    'total_debit' => $newPaid,
+                    'total_credit' => $newPaid,
+                    'created_by' => auth()->id(),
+                ]);
+                JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $hutangAccount->id, 'debit' => $newPaid, 'credit' => 0]);
+
+                foreach ($validated['payments'] as $payment) {
+                    $cashAccount = CashAccount::find($payment['cash_account_id']);
+                    if ($cashAccount && $cashAccount->account_id) {
+                        JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $cashAccount->account_id, 'debit' => 0, 'credit' => (float) $payment['amount']]);
+                    }
+                }
+            }
+        });
+
+        return redirect()->route('transaksi.purchases.pay', $purchase)
+            ->with('success', 'Pembayaran berhasil dicatat.');
+    }
+
+    public function receiveForm(Purchase $purchase)
+    {
+        $purchase->load('items.product', 'supplier');
+        $receiveHistory = StockMutation::where('reference_type', Purchase::class)
+            ->where('reference_id', $purchase->id)
+            ->with('product', 'creator')
+            ->latest()
+            ->get();
+
+        return view('pages.transaksi.purchases.terima', compact('purchase', 'receiveHistory'));
     }
 
     public function receive(Request $request, Purchase $purchase)
     {
-        if (! in_array($purchase->status, ['draft', 'sent', 'partial'])) {
+        if ($purchase->status === 'cancelled') {
             return back()->with('error', 'PO tidak dapat diterima.');
         }
 
@@ -192,88 +358,101 @@ class PurchaseController extends Controller
             $purchase->save();
 
             $payments = $request->input('payments', []);
-            $paidAmount = 0;
-            foreach ($payments as $payment) {
-                $paidAmount += (float) $payment['amount'];
-            }
-            $purchase->paid_amount = min($paidAmount, $purchase->total);
-            $purchase->save();
-
-            if ($purchase->status === 'completed') {
+            if (! empty($payments)) {
+                $newPaid = 0;
                 foreach ($payments as $payment) {
+                    $amount = (float) $payment['amount'];
                     $cashAccount = CashAccount::find($payment['cash_account_id']);
                     if ($cashAccount) {
-                        $cashAccount->current_balance -= (float) $payment['amount'];
+                        $cashAccount->current_balance -= $amount;
                         $cashAccount->save();
 
                         CashTransaction::create([
                             'cash_account_id' => $cashAccount->id,
                             'type' => 'out',
-                            'amount' => (float) $payment['amount'],
+                            'amount' => $amount,
                             'transaction_date' => now(),
                             'description' => 'Pembayaran PO '.$purchase->document_number,
                             'created_by' => auth()->id(),
                         ]);
                     }
+                    $newPaid += $amount;
                 }
+                $purchase->paid_amount += $newPaid;
+                $purchase->save();
 
-                $remaining = max(0, $purchase->total - $paidAmount);
+                $remaining = max(0, $purchase->total - $purchase->paid_amount);
                 $dueDate = $purchase->due_date ?? ($remaining > 0 ? now()->addDays(30)->format('Y-m-d') : null);
 
-                Payable::create([
-                    'supplier_id' => $purchase->supplier_id,
-                    'purchase_id' => $purchase->id,
-                    'document_number' => $purchase->document_number,
-                    'due_date' => $dueDate,
-                    'amount' => $purchase->total,
-                    'paid_amount' => $paidAmount,
-                    'remaining_amount' => $remaining,
-                    'status' => $paidAmount > 0 ? ($remaining > 0 ? 'partial' : 'paid') : 'open',
-                ]);
+                $payable = Payable::where('purchase_id', $purchase->id)->first();
+                if ($payable) {
+                    $payable->update([
+                        'paid_amount' => $purchase->paid_amount,
+                        'remaining_amount' => $remaining,
+                        'status' => $remaining <= 0 ? 'paid' : 'partial',
+                    ]);
+                } else {
+                    Payable::create([
+                        'supplier_id' => $purchase->supplier_id,
+                        'purchase_id' => $purchase->id,
+                        'document_number' => $purchase->document_number,
+                        'due_date' => $dueDate,
+                        'amount' => $purchase->total,
+                        'paid_amount' => $purchase->paid_amount,
+                        'remaining_amount' => $remaining,
+                        'status' => $remaining <= 0 ? 'paid' : ($purchase->paid_amount > 0 ? 'partial' : 'open'),
+                    ]);
+                }
 
-                $inventoryAccount = Account::where('code', '1-1300')->first();
                 $hutangAccount = Account::where('code', '2-1000')->first();
-                if ($inventoryAccount && $hutangAccount) {
-                    $journal = Journal::create([
+                if ($hutangAccount) {
+                    $paymentJournal = Journal::create([
                         'journal_number' => 'JUR-'.now()->format('Ymd').'-'.str_pad((Journal::count() + 1), 4, '0', STR_PAD_LEFT),
                         'journal_date' => now(),
-                        'description' => 'Jurnal otomatis PO '.$purchase->document_number,
-                        'source' => 'purchase',
+                        'description' => 'Jurnal pembayaran PO '.$purchase->document_number,
+                        'source' => 'purchase_payment',
                         'reference_id' => $purchase->id,
                         'reference_type' => Purchase::class,
-                        'total_debit' => $purchase->total,
-                        'total_credit' => $purchase->total,
+                        'total_debit' => $newPaid,
+                        'total_credit' => $newPaid,
                         'created_by' => auth()->id(),
                     ]);
-                    JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $inventoryAccount->id, 'debit' => $purchase->total, 'credit' => 0]);
-                    JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $hutangAccount->id, 'debit' => 0, 'credit' => $purchase->total]);
+                    JournalEntry::create(['journal_id' => $paymentJournal->id, 'account_id' => $hutangAccount->id, 'debit' => $newPaid, 'credit' => 0]);
 
-                    if ($paidAmount > 0 && ! empty($payments)) {
-                        $paymentJournal = Journal::create([
+                    foreach ($payments as $payment) {
+                        $cashAccount = CashAccount::find($payment['cash_account_id']);
+                        if ($cashAccount && $cashAccount->account_id) {
+                            JournalEntry::create(['journal_id' => $paymentJournal->id, 'account_id' => $cashAccount->account_id, 'debit' => 0, 'credit' => (float) $payment['amount']]);
+                        }
+                    }
+                }
+
+                $hasJournal = Journal::where('reference_type', Purchase::class)
+                    ->where('reference_id', $purchase->id)
+                    ->where('source', 'purchase')
+                    ->exists();
+                if (! $hasJournal) {
+                    $inventoryAccount = Account::where('code', '1-1300')->first();
+                    if ($inventoryAccount && $hutangAccount) {
+                        $journal = Journal::create([
                             'journal_number' => 'JUR-'.now()->format('Ymd').'-'.str_pad((Journal::count() + 1), 4, '0', STR_PAD_LEFT),
                             'journal_date' => now(),
-                            'description' => 'Jurnal pembayaran PO '.$purchase->document_number,
-                            'source' => 'purchase_payment',
+                            'description' => 'Jurnal otomatis PO '.$purchase->document_number,
+                            'source' => 'purchase',
                             'reference_id' => $purchase->id,
                             'reference_type' => Purchase::class,
-                            'total_debit' => $paidAmount,
-                            'total_credit' => $paidAmount,
+                            'total_debit' => $purchase->total,
+                            'total_credit' => $purchase->total,
                             'created_by' => auth()->id(),
                         ]);
-                        JournalEntry::create(['journal_id' => $paymentJournal->id, 'account_id' => $hutangAccount->id, 'debit' => $paidAmount, 'credit' => 0]);
-
-                        foreach ($payments as $payment) {
-                            $cashAccount = CashAccount::find($payment['cash_account_id']);
-                            if ($cashAccount && $cashAccount->account_id) {
-                                JournalEntry::create(['journal_id' => $paymentJournal->id, 'account_id' => $cashAccount->account_id, 'debit' => 0, 'credit' => (float) $payment['amount']]);
-                            }
-                        }
+                        JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $inventoryAccount->id, 'debit' => $purchase->total, 'credit' => 0]);
+                        JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $hutangAccount->id, 'debit' => 0, 'credit' => $purchase->total]);
                     }
                 }
             }
         });
 
-        return back()->with('success', 'Penerimaan berhasil dicatat.');
+        return back()->with('success', 'Penerimaan & pembayaran berhasil dicatat.');
     }
 
     public function destroy(Purchase $purchase)
@@ -307,9 +486,11 @@ class PurchaseController extends Controller
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.discount' => 'nullable|numeric|min:0',
-            'payments' => 'nullable|array',
+            'payments' => 'required|array|min:1',
             'payments.*.cash_account_id' => 'required|exists:cash_accounts,id',
             'payments.*.amount' => 'required|numeric|min:500',
+        ], [
+            'payments.required' => 'Minimal satu metode pembayaran harus diisi.',
         ]);
 
         DB::transaction(function () use ($validated) {

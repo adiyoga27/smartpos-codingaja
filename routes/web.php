@@ -50,9 +50,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('transaksi')->name('transaksi.')->group(function () {
         Route::get('purchases/create/direct', [PurchaseController::class, 'direct'])->name('purchases.direct');
         Route::post('purchases/store/direct', [PurchaseController::class, 'storeDirect'])->name('purchases.storeDirect');
-        Route::resource('purchases', PurchaseController::class);
+        Route::get('purchases/{purchase}/bayar', [PurchaseController::class, 'payForm'])->name('purchases.pay');
+        Route::post('purchases/{purchase}/bayar', [PurchaseController::class, 'payStore'])->name('purchases.pay.store');
+        Route::get('purchases/{purchase}/terima', [PurchaseController::class, 'receiveForm'])->name('purchases.receive.form');
         Route::patch('purchases/{purchase}/receive', [PurchaseController::class, 'receive'])->name('purchases.receive');
         Route::get('purchases/{purchase}/print', [PurchaseController::class, 'print'])->name('purchases.print');
+        Route::resource('purchases', PurchaseController::class);
         Route::resource('purchase_returns', PurchaseReturnController::class);
         Route::resource('sales_orders', SalesOrderController::class);
         Route::post('sales_orders/{sales_order}/deliver', [SalesOrderController::class, 'deliver'])->name('sales_orders.deliver');

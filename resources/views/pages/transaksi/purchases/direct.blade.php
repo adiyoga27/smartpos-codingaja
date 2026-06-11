@@ -48,8 +48,7 @@
                         <div class="space-y-1.5">
                             <label class="text-sm font-medium text-slate-700">Tanggal Pembelian <span class="text-red-500">*</span></label>
                             <div class="relative">
-                                <i class="bi bi-calendar3 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none"></i>
-                                <input type="date" name="purchase_date" class="form-input w-full pl-10" value="{{ now()->format('Y-m-d') }}" required>
+                                <input type="date" name="purchase_date" class="form-input w-full" value="{{ now()->format('Y-m-d') }}" required>
                             </div>
                         </div>
                         <div class="space-y-1.5" x-show="remaining() > 0" x-cloak>
@@ -134,28 +133,18 @@
                                     <div class="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
                                         <div class="space-y-1">
                                             <label class="text-[11px] font-medium text-slate-500 block">Kuantitas</label>
-                                            <div class="relative">
-                                                <input type="number" :value="it.qty" min="0.01" step="0.01" class="form-input w-full text-center text-sm font-medium focus:ring-blue-500 focus:border-blue-500 pr-8"
-                                                       @change="updateItem(id, 'qty', $event.target.value)" @input="updateItem(id, 'qty', $event.target.value)">
-                                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none z-10">Qty</span>
-                                            </div>
+                                            <input type="number" :value="it.qty" min="0.01" step="0.01" class="form-input w-full text-center text-sm font-medium focus:ring-blue-500 focus:border-blue-500"
+                                                   @change="updateItem(id, 'qty', $event.target.value)" @input="updateItem(id, 'qty', $event.target.value)">
                                         </div>
-                                        <div class="space-y-1 md:col-span-2">
-                                            <div class="flex justify-between items-center">
-                                                <label class="text-[11px] font-medium text-slate-500">Harga Beli & Diskon</label>
-                                            </div>
-                                            <div class="flex items-center gap-2">
-                                                <div class="relative flex-1">
-                                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 z-10 pointer-events-none">Rp</span>
-                                                    <input type="text" :value="fmtNum(it.price)" class="form-input w-full pl-8 text-sm input-rupiah" placeholder="Harga"
-                                                           @input="updateItem(id, 'price', $event.target.value); formatRupiahInput($event.target)">
-                                                </div>
-                                                <div class="relative w-24">
-                                                    <span class="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-red-400 z-10 pointer-events-none"><i class="bi bi-tag"></i></span>
-                                                    <input type="text" :value="it.discount ? fmtNum(it.discount) : '0'" class="form-input w-full pl-7 pr-2 text-sm input-rupiah text-red-500" placeholder="Diskon"
-                                                           @input="updateItem(id, 'disc', $event.target.value); formatRupiahInput($event.target)" title="Diskon">
-                                                </div>
-                                            </div>
+                                        <div class="space-y-1">
+                                            <label class="text-[11px] font-medium text-slate-500 block">Harga Beli <span class="text-red-500">*</span></label>
+                                            <input type="text" :value="fmtNum(it.price)" class="form-input w-full text-sm input-rupiah" placeholder="Harga" required
+                                                   @input="updateItem(id, 'price', $event.target.value); formatRupiahInput($event.target)">
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="text-[11px] font-medium text-slate-500 block">Diskon</label>
+                                            <input type="text" :value="it.discount ? fmtNum(it.discount) : '0'" class="form-input w-full text-sm input-rupiah text-red-500" placeholder="0"
+                                                   @input="updateItem(id, 'disc', $event.target.value); formatRupiahInput($event.target)">
                                         </div>
                                         <div class="space-y-1 text-right">
                                             <label class="text-[11px] font-medium text-slate-500 block">Subtotal Item</label>
@@ -217,15 +206,14 @@
 
                         <template x-for="(pmt, idx) in payments" :key="idx">
                             <div class="flex items-center gap-2 mb-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
-                                <select :name="'payments['+idx+'][cash_account_id]'" class="form-select text-xs py-1.5 flex-1" required>
+                                <select :name="'payments['+idx+'][cash_account_id]'" :class="'form-select text-xs py-1.5 flex-1 paySel-'+idx" required>
                                     <option value="">- Pilih Kas/Bank -</option>
                                     @foreach($cashAccounts as $ca)
                                     <option value="{{ $ca->id }}">{{ $ca->name }} ({{ formatRupiah($ca->current_balance) }})</option>
                                     @endforeach
                                 </select>
                                 <div class="relative w-32">
-                                    <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 z-10">Rp</span>
-                                    <input type="text" :value="pmt.amount" class="form-input text-xs py-1.5 pl-7 text-right" placeholder="0"
+                                    <input type="text" :value="pmt.amount" class="form-input text-xs py-1.5 text-right" placeholder="0"
                                            @input="pmt.amount = $event.target.value.replace(/[^0-9]/g, '')"
                                            :name="'payments['+idx+'][amount]'" required>
                                 </div>
@@ -250,9 +238,9 @@
                     </div>
 
                     <div class="space-y-3 pt-4 border-t border-slate-100">
-                        <button type="submit" class="btn w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-semibold flex items-center justify-center gap-2" :disabled="Object.keys(selectedItems).length === 0">
-                            <i class="bi bi-check2-circle text-lg"></i>
-                            Simpan Pembelian
+                        <button type="submit" class="btn w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-semibold flex items-center justify-center gap-2" :disabled="Object.keys(selectedItems).length === 0 || loading">
+                            <span x-show="!loading"><i class="bi bi-check2-circle text-lg"></i> Simpan Pembelian</span>
+                            <span x-show="loading" class="flex items-center gap-2"><span class="spinner-border spinner-border-sm"></span> Menyimpan...</span>
                         </button>
                         <a href="{{ route('transaksi.purchases.index') }}" class="btn w-full py-2.5 bg-white border-2 border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 rounded-xl transition-all font-medium flex items-center justify-center gap-2">
                             <i class="bi bi-x-lg"></i> Batal
@@ -369,6 +357,7 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('directForm', () => ({
         selectedItems: {},
         payments: [],
+        loading: false,
         showModal: false,
         searchQuery: '',
         products: {!! $products->map(fn($p) => ['id' => $p->id, 'name' => $p->name, 'code' => $p->code, 'price' => (float) $p->purchase_price, 'selling_price' => (float) $p->selling_price, 'wholesale_price' => (float) $p->wholesale_price, 'photo' => $p->photo ? asset('storage/'.$p->photo) : ''])->values()->toJson() !!},
@@ -422,36 +411,71 @@ document.addEventListener('alpine:init', () => {
         renderHidden() {},
 
         handleSubmit(e) {
+            if (this.loading) return;
             if (Object.keys(this.selectedItems).length === 0) { 
-                if (typeof showToast === 'function') showToast('Pilih minimal 1 produk', 'warning'); 
-                else alert('Pilih minimal 1 produk');
+                showToast('Pilih minimal 1 produk', 'warning'); 
                 return; 
             }
             let supplier = document.querySelector('[name="supplier_id"]');
             if (!supplier || !supplier.value) { 
-                if (typeof showToast === 'function') showToast('Pilih supplier', 'warning'); 
-                else alert('Pilih supplier');
+                showToast('Pilih supplier', 'warning'); 
                 return; 
             }
+            let hasEmptyPrice = Object.values(this.selectedItems).some(it => !it.price || parseFloat(it.price) <= 0);
+            if (hasEmptyPrice) {
+                showToast('Harga beli wajib diisi untuk semua produk', 'warning'); 
+                return; 
+            }
+            let hasValidPayment = false;
+            this.payments.forEach((p, i) => {
+                let sel = document.querySelector(`select.paySel-${i}`);
+                if (sel && sel.value && parseInt(p.amount) > 0) hasValidPayment = true;
+            });
+            if (!hasValidPayment) {
+                showToast('Tambahkan minimal 1 metode pembayaran', 'warning'); 
+                return; 
+            }
+
+            this.loading = true;
             let form = e.target;
+            let fd = new FormData(form);
+
             form.querySelectorAll('input[name^="items["]').forEach(el => el.remove());
+            form.querySelectorAll('input[name^="payments["]').forEach(el => el.remove());
+
             let idx = 0;
             Object.entries(this.selectedItems).forEach(([id, it]) => {
-                form.insertAdjacentHTML('beforeend',
-                    `<input type="hidden" name="items[${idx}][product_id]" value="${id}">` +
-                    `<input type="hidden" name="items[${idx}][quantity]" value="${it.qty}">` +
-                    `<input type="hidden" name="items[${idx}][unit_price]" value="${it.price}">` +
-                    `<input type="hidden" name="items[${idx}][discount]" value="${it.discount || 0}">`);
+                fd.append(`items[${idx}][product_id]`, id);
+                fd.append(`items[${idx}][quantity]`, it.qty);
+                fd.append(`items[${idx}][unit_price]`, it.price);
+                fd.append(`items[${idx}][discount]`, it.discount || 0);
                 idx++;
             });
             this.payments.forEach((p, i) => {
-                if (p.cash_account_id && parseInt(p.amount) > 0) {
-                    form.insertAdjacentHTML('beforeend',
-                        `<input type="hidden" name="payments[${i}][cash_account_id]" value="${p.cash_account_id}">` +
-                        `<input type="hidden" name="payments[${i}][amount]" value="${p.amount}">`);
+                let sel = document.querySelector(`select.paySel-${i}`);
+                if (sel && sel.value && parseInt(p.amount) > 0) {
+                    fd.append(`payments[${i}][cash_account_id]`, sel.value);
+                    fd.append(`payments[${i}][amount]`, p.amount);
                 }
             });
-            form.submit();
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+                body: fd,
+            })
+            .then(r => r.json().then(data => ({ ok: r.ok, status: r.status, data })))
+            .then(({ ok, status, data }) => {
+                if (ok) {
+                    showToast(data.message || 'Pembelian berhasil', 'success');
+                    setTimeout(() => window.location.href = '{{ route('transaksi.purchases.index', ['type' => 'direct']) }}', 500);
+                } else {
+                    let msg = data.message || Object.values(data.errors || {}).flat().join('<br>') || 'Gagal menyimpan';
+                    showToast(msg, 'error');
+                }
+            })
+            .catch(() => showToast('Gagal memproses pembelian', 'error'))
+            .finally(() => { this.loading = false; });
         }
     }));
 });
