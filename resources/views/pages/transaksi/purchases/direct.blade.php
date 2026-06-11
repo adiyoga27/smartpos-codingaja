@@ -6,7 +6,7 @@
 @endsection
 @section('content')
 <div x-data="directForm()" class="pb-24 lg:pb-8">
-<form action="{{ route('transaksi.purchases.storeDirect') }}" method="POST" id="directForm" @submit.prevent="handleSubmit">
+<form action="{{ route('transaksi.purchases.storeDirect') }}" method="POST" id="directForm" data-noloading="true" @submit.prevent="handleSubmit">
     @csrf
     
     <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -51,11 +51,11 @@
                                 <input type="date" name="purchase_date" class="form-input w-full" value="{{ now()->format('Y-m-d') }}" required>
                             </div>
                         </div>
-                        <div class="space-y-1.5" x-show="remaining() > 0" x-cloak>
-                            <label class="text-sm font-medium text-slate-700">Jatuh Tempo <span class="text-red-500">*</span></label>
+                        <div class="space-y-1.5">
+                            <label class="text-sm font-medium text-slate-700">Jatuh Tempo <span class="text-slate-400 font-normal text-xs">(Opsional)</span></label>
                             <div class="relative">
                                 <i class="bi bi-calendar-check absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none"></i>
-                                <input type="date" name="due_date" class="form-input w-full pl-10" :required="remaining() > 0">
+                                <input type="date" name="due_date" class="form-input w-full pl-10">
                             </div>
                         </div>
                         <div class="md:col-span-2 space-y-1.5">
