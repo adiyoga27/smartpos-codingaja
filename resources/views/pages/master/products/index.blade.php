@@ -43,7 +43,8 @@ $(document).ready(function() {
         },
         columnDefs: [
             { orderable: false, targets: [7, 8] }
-        ]
+        ],
+        order: [[1, 'asc']]
     });
 });
 </script>

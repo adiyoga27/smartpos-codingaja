@@ -8,7 +8,13 @@
 @section('content')
 <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
     <h4 class="font-bold mb-0">Kartu Stok</h4>
-    <a href="{{ route('stok.opname') }}" class="btn btn-primary btn-md"><i class="bi bi-clipboard-check"></i> Stock Opname</a>
+    <div class="flex items-center gap-3">
+        <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
+            <input type="checkbox" id="lowStockFilter" class="form-checkbox rounded border-slate-300 text-primary-600 focus:ring-primary-500">
+            <span>Tampilkan stok dibawah minimal</span>
+        </label>
+        <a href="{{ route('stok.opname') }}" class="btn btn-primary btn-md"><i class="bi bi-clipboard-check"></i> Stock Opname</a>
+    </div>
 </div>
 <div class="card">
     <div class="card-body p-0">
@@ -23,10 +29,15 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
-    $('#mutations-table').DataTable({
+    let table = $('#mutations-table').DataTable({
         processing: true,
         serverSide: true,
-        ajax: '{{ route('stok.mutations.index') }}',
+        ajax: {
+            url: '{{ route('stok.mutations.index') }}',
+            data: function(d) {
+                d.low_stock = $('#lowStockFilter').is(':checked') ? '1' : '0';
+            }
+        },
         pageLength: 25,
         dom: 'Bfrtip',
         buttons: [
@@ -40,8 +51,13 @@ $(document).ready(function() {
             url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json'
         },
         columnDefs: [
-            { orderable: false, targets: [2, 6] }
-        ]
+            { orderable: false, targets: [6] }
+        ],
+        order: [[2, 'desc']]
+    });
+
+    $('#lowStockFilter').on('change', function() {
+        table.ajax.reload();
     });
 });
 </script>

@@ -23,12 +23,29 @@ class StockMutationController extends Controller
             $search = $request->input('search.value', '');
 
             $total = Product::count();
+            if ($request->filled('low_stock') && $request->input('low_stock') === '1') {
+                $query->whereColumn('stock', '<=', 'min_stock');
+            }
             if ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', '%'.$search.'%')->orWhere('code', 'like', '%'.$search.'%');
                 });
             }
             $filtered = $query->count();
+
+            $orderableColumns = ['code', 'name', 'stock', 'min_stock', 'total_in', 'total_out'];
+            if ($request->filled('order')) {
+                foreach ($request->input('order') as $order) {
+                    $colIndex = (int) ($order['column'] ?? 0);
+                    $dir = $order['dir'] ?? 'asc';
+                    if (isset($orderableColumns[$colIndex])) {
+                        $query->orderBy($orderableColumns[$colIndex], $dir);
+                    }
+                }
+            } else {
+                $query->orderBy('stock', 'desc');
+            }
+
             $data = $query->skip($start)->take($length)->get()->map(function ($item) {
                 $stockBadge = $item->stock <= $item->min_stock ? '<span class="badge bg-danger">'.formatQty($item->stock).'</span>' : formatQty($item->stock);
 

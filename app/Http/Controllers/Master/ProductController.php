@@ -14,13 +14,14 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $query = Product::with('category', 'supplier')->latest();
+            $query = Product::with('category', 'supplier');
+
             $draw = (int) $request->input('draw', 1);
             $start = (int) $request->input('start', 0);
             $length = (int) $request->input('length', 25);
             $search = $request->input('search.value', '');
 
-            $total = $query->count();
+            $total = Product::count();
             if ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', '%'.$search.'%')
@@ -29,6 +30,26 @@ class ProductController extends Controller
                 });
             }
             $filtered = $query->count();
+
+            $orderableColumns = ['code', 'name', 'category_id', 'purchase_price', 'selling_price', 'wholesale_price', 'stock'];
+            if ($request->filled('order')) {
+                foreach ($request->input('order') as $order) {
+                    $colIndex = (int) ($order['column'] ?? 0);
+                    $dir = $order['dir'] ?? 'asc';
+                    if (isset($orderableColumns[$colIndex])) {
+                        if ($orderableColumns[$colIndex] === 'category_id') {
+                            $query->join('categories', 'products.category_id', '=', 'categories.id')
+                                ->orderBy('categories.name', $dir)
+                                ->select('products.*');
+                        } else {
+                            $query->orderBy($orderableColumns[$colIndex], $dir);
+                        }
+                    }
+                }
+            } else {
+                $query->orderBy('name', 'asc');
+            }
+
             $data = $query->skip($start)->take($length)->get()->map(function ($item) {
                 return [
                     $item->code,
