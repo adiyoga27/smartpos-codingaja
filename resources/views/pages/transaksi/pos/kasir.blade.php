@@ -111,7 +111,7 @@
         </div>
 
         <!-- Right: cart panel -->
-        <div class="w-full md:w-[360px] lg:w-[400px] xl:w-[450px] h-[50vh] md:h-auto border-t md:border-t-0 md:border-l border-slate-200 bg-white flex flex-col shrink-0 min-h-0"
+        <div class="w-full md:w-[500px] lg:w-[600px] xl:w-[700px] h-[50vh] md:h-auto border-t md:border-t-0 md:border-l border-slate-200 bg-white flex flex-col shrink-0 min-h-0"
              x-show="true">
             @include('pages.transaksi.pos._cart_form')
         </div>
@@ -261,8 +261,8 @@ function posKasir() {
             if (pmEl) {
                 pmEl.addEventListener('change', function() {
                     let isCredit = this.options[this.selectedIndex].dataset.credit === '1';
-                    let isCash = this.options[this.selectedIndex].textContent.trim() === 'Tunai';
-                    if (accountPanel) accountPanel.style.display = isCash ? 'none' : '';
+                    if (accountPanel) accountPanel.style.display = isCredit ? 'none' : '';
+                    if (tempoPanel) tempoPanel.style.display = isCredit ? '' : 'none';
                     if (tempoPanel) tempoPanel.style.display = isCredit ? '' : 'none';
                     if (isCredit) {
                         self.btnPayLabel = 'Proses Kredit';
@@ -438,36 +438,43 @@ function posKasir() {
             if (emptyEl) emptyEl.style.display = 'none';
             document.getElementById('btnPay').disabled = false;
             let rows = this.cart.map((item, idx) => `
-                <tr class="cart-row">
-                    <td class="text-[11px] py-1.5"><span class="font-medium">${item.name}</span><br><span class="text-[10px] text-slate-400">Rp ${item.price.toLocaleString('id-ID')}</span></td>
-                    <td class="text-[11px] py-1.5" style="width: 85px; min-width: 85px;">
-                        <div class="flex items-center gap-0.5">
-                            <button type="button" @@click="updateQty(${idx}, ${item.qty - 1})" class="btn btn-sm btn-outline-secondary p-0 w-5 h-5 flex items-center justify-center"><i class="bi bi-dash text-xs"></i></button>
+                <tr class="cart-row border-b border-slate-100 last:border-0">
+                    <td class="text-[11px] py-2 pr-2">
+                        <span class="font-medium text-slate-800 line-clamp-2">${item.name}</span>
+                        <span class="text-[10px] text-slate-400 block mt-0.5">Rp ${item.price.toLocaleString('id-ID')}</span>
+                    </td>
+                    <td class="py-2 pr-2 align-top">
+                        <div class="flex items-center bg-slate-50 border border-slate-200 rounded-md overflow-hidden">
+                            <button type="button" @click="updateQty(${idx}, ${item.qty - 1})" class="px-1.5 py-1 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors"><i class="bi bi-dash"></i></button>
                             <input type="text" value="${item.qty.toLocaleString('id-ID')}" inputmode="numeric"
-                                   @@focus="formatInput($event.target, 'raw')"
-                                   @@blur="formatInput($event.target, 'currency')"
-                                   @@change="updateQty(${idx}, $event.target.value.replace(/\D/g, ''))"
-                                   class="form-input text-center text-[11px]" style="width: 40px; min-width: 40px; padding: 1px 3px;">
-                            <button type="button" @@click="updateQty(${idx}, ${item.qty + 1})" class="btn btn-sm btn-outline-secondary p-0 w-5 h-5 flex items-center justify-center"><i class="bi bi-plus text-xs"></i></button>
+                                   @focus="formatInput($event.target, 'raw')"
+                                   @blur="formatInput($event.target, 'currency')"
+                                   @change="updateQty(${idx}, $event.target.value.replace(/\D/g, ''))"
+                                   class="w-10 text-center text-[11px] font-medium bg-transparent border-0 focus:ring-0 p-0">
+                            <button type="button" @click="updateQty(${idx}, ${item.qty + 1})" class="px-1.5 py-1 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors"><i class="bi bi-plus"></i></button>
                         </div>
                     </td>
-                    <td class="text-[11px] py-1.5" style="width: 80px; min-width: 80px;">
+                    <td class="py-2 pr-2 align-top">
                         <input type="text" value="${item.price.toLocaleString('id-ID')}" inputmode="numeric"
-                               @@focus="formatInput($event.target, 'raw')"
-                               @@blur="formatInput($event.target, 'currency')"
-                               @@change="updatePrice(${idx}, $event.target.value.replace(/\D/g, ''))"
-                               class="form-input text-center text-[11px]" style="width: 70px; min-width: 70px; padding: 1px 3px;">
+                               @focus="formatInput($event.target, 'raw')"
+                               @blur="formatInput($event.target, 'currency')"
+                               @change="updatePrice(${idx}, $event.target.value.replace(/\D/g, ''))"
+                               class="form-input text-right text-[11px] w-full min-w-[90px] px-2 py-1 rounded-md border-slate-200 shadow-sm">
                     </td>
-                    <td class="text-[11px] py-1.5" style="width: 55px; min-width: 55px;">
+                    <td class="py-2 pr-2 align-top">
                         <input type="text" value="${(item.discount || 0).toLocaleString('id-ID')}" inputmode="numeric"
-                               @@focus="formatInput($event.target, 'raw')"
-                               @@blur="formatInput($event.target, 'currency')"
-                               @@change="updateDiscount(${idx}, $event.target.value.replace(/\D/g, ''))"
-                               class="form-input text-center text-[11px]" style="width: 50px; min-width: 50px; padding: 1px 3px;">
+                               @focus="formatInput($event.target, 'raw')"
+                               @blur="formatInput($event.target, 'currency')"
+                               @change="updateDiscount(${idx}, $event.target.value.replace(/\D/g, ''))"
+                               class="form-input text-right text-[11px] w-full min-w-[75px] px-2 py-1 rounded-md border-slate-200 shadow-sm text-red-500 font-medium">
                     </td>
-                    <td class="text-[11px] py-1.5 text-right font-medium">${Math.max(0, item.total).toLocaleString('id-ID')}</td>
-                    <td class="text-center py-1.5" style="width: 24px;">
-                        <button type="button" @@click="removeFromCart(${idx})" class="btn btn-sm btn-outline-danger p-0 w-5 h-5 flex items-center justify-center"><i class="bi bi-trash text-[10px]"></i></button>
+                    <td class="text-[11px] py-2 pr-2 text-right font-bold text-slate-800 align-top pt-3">
+                        ${Math.max(0, item.total).toLocaleString('id-ID')}
+                    </td>
+                    <td class="py-2 text-right align-top pt-2">
+                        <button type="button" @click="removeFromCart(${idx})" class="text-red-400 hover:text-red-600 p-1.5 rounded-md hover:bg-red-50 transition-colors">
+                            <i class="bi bi-trash"></i>
+                        </button>
                     </td>
                 </tr>
             `).join('');

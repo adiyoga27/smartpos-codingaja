@@ -1,4 +1,4 @@
-<form action="{{ route('transaksi.sales.store') }}" method="POST" id="posForm" data-noloading="true" class="flex flex-col flex-1 min-h-0">
+<form action="{{ route('transaksi.sales.store') }}" method="POST" id="posForm" data-noloading="true" class="flex flex-col flex-1 min-h-0 w-full overflow-hidden">
     @csrf
     <div class="bg-gradient-to-r from-primary-600 to-primary-700 px-4 py-2.5 text-white shrink-0 flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -7,26 +7,27 @@
         </div>
         <span class="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full" x-text="cart.length + ' item'"></span>
     </div>
-    <div class="overflow-y-auto flex-1 flex flex-col">
-        <div class="flex-1">
-        <table class="table mb-0 w-full" id="cartTable">
-            <thead class="sticky top-0 z-10 bg-slate-50">
-                <tr>
-                    <th class="text-[11px] py-2">Produk</th>
-                    <th class="text-[11px] py-2">Qty</th>
-                    <th class="text-[11px] py-2">Harga</th>
-                    <th class="text-[11px] py-2">Disc</th>
-                    <th class="text-[11px] py-2 text-right">Total</th>
-                    <th class="py-2"></th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-        <div id="emptyCart" class="flex flex-col items-center justify-center py-16 text-slate-400">
-            <i class="bi bi-basket text-4xl mb-3"></i>
-            <p class="text-sm">Keranjang kosong</p>
-            <p class="text-xs mt-1">Klik produk untuk menambahkan</p>
-        </div>
+    <div class="overflow-y-auto overflow-x-auto flex-1 flex flex-col custom-scrollbar">
+        <div class="flex flex-col flex-1 w-full min-w-[500px] pb-4">
+            <div class="flex-1 w-full">
+                <table class="table mb-0 w-full" id="cartTable">
+                <thead class="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 shadow-sm">
+                    <tr>
+                        <th class="text-[11px] py-2 px-1 text-slate-500 font-bold tracking-wider">Produk</th>
+                        <th class="text-[11px] py-2 px-1 text-slate-500 font-bold tracking-wider">Qty</th>
+                        <th class="text-[11px] py-2 px-1 text-slate-500 font-bold tracking-wider">Harga</th>
+                        <th class="text-[11px] py-2 px-1 text-slate-500 font-bold tracking-wider">Disc</th>
+                        <th class="text-[11px] py-2 px-1 text-right text-slate-500 font-bold tracking-wider">Total</th>
+                        <th class="py-2 px-1"></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <div id="emptyCart" class="flex flex-col items-center justify-center py-16 text-slate-400">
+                <i class="bi bi-basket text-4xl mb-3"></i>
+                <p class="text-sm">Keranjang kosong</p>
+                <p class="text-xs mt-1">Klik produk untuk menambahkan</p>
+            </div>
         </div>
 
         <div class="border-t border-slate-200 bg-slate-50/70 px-4 py-2.5 space-y-2 shrink-0 mt-auto">
@@ -161,7 +162,6 @@
             </div>
             <input type="hidden" name="total_discount" id="totalAddDisc" value="0">
         </div>
-          
     </div>
     
 
