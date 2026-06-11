@@ -13,7 +13,6 @@
         <a href="{{ route('transaksi.purchases.direct') }}" class="btn btn-success btn-md"><i class="bi bi-cart-check"></i> Buat Pembelian Langsung</a>
         @else
         <a href="{{ route('transaksi.purchases.create') }}" class="btn btn-primary btn-md"><i class="bi bi-plus-lg"></i> Buat PO</a>
-        <a href="{{ route('transaksi.purchases.direct') }}" class="btn btn-success btn-md"><i class="bi bi-cart-check"></i> Pembelian Langsung</a>
         @endif
     </div>
 </div>
