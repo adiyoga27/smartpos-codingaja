@@ -90,6 +90,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('receivables/{receivable}/receive', [ReceivableController::class, 'receiveStore'])->name('receivables.receive.store');
         Route::get('cash_accounts/{cash_account}/adjust', [CashAccountController::class, 'adjustForm'])->name('cash_accounts.adjust');
         Route::post('cash_accounts/{cash_account}/adjust', [CashAccountController::class, 'adjustStore'])->name('cash_accounts.adjust.store');
+        Route::get('cash_accounts/{cash_account}/manage', [CashAccountController::class, 'manage'])->name('cash_accounts.manage');
+        Route::get('cash_accounts/{cash_account}/transactions', [CashAccountController::class, 'manageData'])->name('cash_accounts.transactions');
+        Route::post('cash_accounts/{cash_account}/topup', [CashAccountController::class, 'topup'])->name('cash_accounts.topup');
+        Route::post('cash_accounts/{cash_account}/withdraw', [CashAccountController::class, 'withdraw'])->name('cash_accounts.withdraw');
         Route::resource('cash_accounts', CashAccountController::class);
         Route::resource('cash_transactions', CashTransactionController::class);
     });

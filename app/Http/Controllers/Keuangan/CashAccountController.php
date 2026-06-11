@@ -32,7 +32,7 @@ class CashAccountController extends Controller
             $data = $query->skip($start)->take($length)->get()->map(function ($item) {
                 $typeLabel = $item->type == 'cash' ? '<span class="badge badge-success">Kas</span>' : '<span class="badge badge-info">Bank</span>';
                 $defaultBadge = $item->is_default ? ' <span class="badge badge-primary">Default</span>' : '';
-                $actions = '<a href="'.route('keuangan.cash_accounts.adjust', $item).'" class="btn btn-sm btn-info" title="Sesuaikan Saldo"><i class="bi bi-sliders"></i></a> ';
+                $actions = '<a href="'.route('keuangan.cash_accounts.manage', $item).'" class="btn btn-sm btn-info" title="Kelola Akun"><i class="bi bi-gear"></i></a> ';
                 $actions .= '<a href="'.route('keuangan.cash_accounts.edit', $item).'" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a> ';
                 $actions .= '<form action="'.route('keuangan.cash_accounts.destroy', $item).'" method="POST" class="d-inline" onsubmit="return confirm(\'Hapus akun ini?\')">'
                     .csrf_field().method_field('DELETE')
@@ -125,6 +125,107 @@ class CashAccountController extends Controller
         $cashAccount->save();
 
         return redirect()->route('keuangan.cash_accounts.index')->with('success', 'Akun kas/bank berhasil diperbarui.');
+    }
+
+    public function manage(CashAccount $cashAccount)
+    {
+        return view('pages.keuangan.cash_accounts.manage', compact('cashAccount'));
+    }
+
+    public function manageData(CashAccount $cashAccount, Request $request)
+    {
+        $query = CashTransaction::where('cash_account_id', $cashAccount->id)
+            ->with('creator')
+            ->oldest('transaction_date');
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        $search = $request->input('search.value', '');
+        if ($search) {
+            $query->where('description', 'like', '%'.$search.'%');
+        }
+
+        $allTransactions = $query->get();
+
+        $running = $cashAccount->opening_balance;
+        $rows = [];
+        foreach ($allTransactions as $item) {
+            if ($item->type === 'in') {
+                $running += $item->amount;
+            } else {
+                $running -= $item->amount;
+            }
+
+            $rows[] = [
+                $item->transaction_date->format('d/m/Y H:i'),
+                $item->description ?? '-',
+                $item->type === 'in' ? formatRupiah($item->amount) : '-',
+                $item->type === 'out' ? formatRupiah($item->amount) : '-',
+                formatRupiah($running),
+            ];
+        }
+
+        $rows = array_reverse($rows);
+
+        $total = count($rows);
+        $draw = (int) $request->input('draw', 1);
+        $start = (int) $request->input('start', 0);
+        $length = (int) $request->input('length', 25);
+        $data = array_slice($rows, $start, $length);
+
+        return response()->json(['draw' => $draw, 'recordsTotal' => $total, 'recordsFiltered' => $total, 'data' => $data]);
+    }
+
+    public function topup(Request $request, CashAccount $cashAccount)
+    {
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:500',
+            'description' => 'nullable|string|max:255',
+        ]);
+
+        DB::transaction(function () use ($cashAccount, $validated) {
+            CashTransaction::create([
+                'cash_account_id' => $cashAccount->id,
+                'type' => 'in',
+                'amount' => $validated['amount'],
+                'transaction_date' => now(),
+                'description' => 'Top-Up Saldo: '.($validated['description'] ?? 'Top-Up'),
+                'created_by' => auth()->id(),
+            ]);
+
+            $cashAccount->current_balance += $validated['amount'];
+            $cashAccount->save();
+        });
+
+        return redirect()->route('keuangan.cash_accounts.manage', $cashAccount)
+            ->with('success', 'Top-Up saldo '.formatRupiah($validated['amount']).' berhasil.');
+    }
+
+    public function withdraw(Request $request, CashAccount $cashAccount)
+    {
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:500|max:'.$cashAccount->current_balance,
+            'description' => 'nullable|string|max:255',
+        ]);
+
+        DB::transaction(function () use ($cashAccount, $validated) {
+            CashTransaction::create([
+                'cash_account_id' => $cashAccount->id,
+                'type' => 'out',
+                'amount' => $validated['amount'],
+                'transaction_date' => now(),
+                'description' => 'Penarikan Saldo: '.($validated['description'] ?? 'Penarikan'),
+                'created_by' => auth()->id(),
+            ]);
+
+            $cashAccount->current_balance -= $validated['amount'];
+            $cashAccount->save();
+        });
+
+        return redirect()->route('keuangan.cash_accounts.manage', $cashAccount)
+            ->with('success', 'Penarikan saldo '.formatRupiah($validated['amount']).' berhasil.');
     }
 
     public function adjustForm(CashAccount $cashAccount)

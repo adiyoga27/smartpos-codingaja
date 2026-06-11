@@ -114,10 +114,15 @@ class SaleController extends Controller
                 $cashAccountId = CashAccount::active()->where('is_default', true)->value('id');
             }
 
+            $customerName = $validated['customer_name'] ?? null;
+            if (! $customerName && ($validated['customer_id'] ?? null)) {
+                $customerName = Customer::find($validated['customer_id'])?->name;
+            }
+
             $sale = Sale::create([
                 'invoice_number' => $validated['invoice_number'],
                 'customer_id' => $validated['customer_id'] ?? null,
-                'customer_name' => $validated['customer_name'] ?? null,
+                'customer_name' => $customerName,
                 'sale_date' => $validated['sale_date'],
                 'payment_method_id' => $validated['payment_method_id'],
                 'tax_id' => $validated['tax_id'] ?? null,
