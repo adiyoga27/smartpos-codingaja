@@ -66,6 +66,13 @@
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-semibold text-slate-800 line-clamp-1" x-text="it.name"></p>
                                 <p class="text-[10px] text-slate-400" x-text="it.code"></p>
+                                <p class="text-[10px] mt-0.5">
+                                    <span class="text-slate-400">Jual: </span>
+                                    <span class="text-emerald-600 font-medium" x-text="formatRp(it.selling_price)"></span>
+                                    <span class="text-slate-300 mx-1">|</span>
+                                    <span class="text-slate-400">Reseller: </span>
+                                    <span class="text-amber-600 font-medium" x-text="formatRp(it.wholesale_price)"></span>
+                                </p>
                                 <div class="grid grid-cols-4 gap-2 mt-2">
                                     <div>
                                         <label class="text-[10px] text-slate-400">Qty</label>
@@ -139,9 +146,19 @@
                             <i class="bi bi-box-seam text-2xl text-slate-300" x-show="!p.photo"></i>
                         </div>
                         <p class="text-[11px] font-semibold text-slate-700 line-clamp-2 leading-tight mb-1" x-text="p.name"></p>
-                        <div class="flex items-center justify-between">
-                            <span class="text-[10px] text-slate-400" x-text="p.code"></span>
-                            <span class="text-[11px] font-bold text-primary-600" x-text="formatRp(p.price)"></span>
+                        <div class="space-y-0.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] text-slate-400" x-text="p.code"></span>
+                                <span class="text-[11px] font-bold text-primary-600" x-text="formatRp(p.price)"></span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[9px] text-slate-400">Jual</span>
+                                <span class="text-[10px] font-medium text-emerald-600" x-text="formatRp(p.selling_price)"></span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[9px] text-slate-400">Reseller</span>
+                                <span class="text-[10px] font-medium text-amber-600" x-text="formatRp(p.wholesale_price)"></span>
+                            </div>
                         </div>
                     </div>
                 </template>
@@ -161,7 +178,7 @@ document.addEventListener('alpine:init', () => {
         selectedItems: {},
         showModal: false,
         searchQuery: '',
-        products: {!! $products->map(fn($p) => ['id' => $p->id, 'name' => $p->name, 'code' => $p->code, 'price' => (float) $p->purchase_price, 'photo' => $p->photo ? asset('storage/'.$p->photo) : ''])->values()->toJson() !!},
+        products: {!! $products->map(fn($p) => ['id' => $p->id, 'name' => $p->name, 'code' => $p->code, 'price' => (float) $p->purchase_price, 'selling_price' => (float) $p->selling_price, 'wholesale_price' => (float) $p->wholesale_price, 'photo' => $p->photo ? asset('storage/'.$p->photo) : ''])->values()->toJson() !!},
 
         itemCount() { let n = Object.keys(this.selectedItems).length; return n + ' item'; },
         subtotal() { return Object.values(this.selectedItems).reduce((s, it) => s + it.qty * it.price, 0); },

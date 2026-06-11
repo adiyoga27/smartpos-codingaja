@@ -217,7 +217,7 @@ class PurchaseController extends Controller
 
     public function direct()
     {
-        $suppliers = Supplier::active()->pluck('name', 'id');
+        $suppliers = Supplier::pluck('name', 'id');
         $products = Product::active()->get();
         $prefix = CompanySetting::first()->doc_prefix_po ?? 'PO';
         $documentNumber = $prefix.'-DIRECT-'.now()->format('Ymd').'-'.str_pad((Purchase::withTrashed()->count() + 1), 4, '0', STR_PAD_LEFT);

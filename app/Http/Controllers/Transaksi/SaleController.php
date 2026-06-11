@@ -406,6 +406,150 @@ class SaleController extends Controller
         ]);
     }
 
+    public function update(Request $request, Sale $sale)
+    {
+        if (! auth()->user()->can('edit_sale')) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:paid,partial,unpaid,cancelled',
+            'items' => 'required|array|min:1',
+            'items.*.id' => 'required|exists:sale_items,id',
+            'items.*.quantity' => 'required|numeric|min:0.01',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.discount' => 'nullable|numeric|min:0',
+        ]);
+
+        $sale->load('items');
+
+        DB::transaction(function () use ($validated, $sale) {
+            // 1. Revert old stock
+            foreach ($sale->items as $oldItem) {
+                $product = Product::find($oldItem->product_id);
+                if ($product) {
+                    $product->stock += $oldItem->quantity;
+                    $product->save();
+                }
+            }
+
+            // 2. Delete old stock mutations
+            StockMutation::where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->delete();
+
+            // 3. Update each item
+            $subtotal = 0;
+            $itemDiscount = 0;
+            $itemIds = [];
+
+            foreach ($validated['items'] as $data) {
+                $item = SaleItem::find($data['id']);
+                if (! $item || $item->sale_id !== $sale->id) {
+                    continue;
+                }
+
+                $qty = (float) $data['quantity'];
+                $price = (float) $data['unit_price'];
+                $disc = (float) ($data['discount'] ?? 0);
+                $lineTotal = max(0, ($qty * $price) - $disc);
+
+                $item->update([
+                    'quantity' => $qty,
+                    'unit_price' => $price,
+                    'discount' => $disc,
+                    'total' => $lineTotal,
+                ]);
+
+                $subtotal += $qty * $price;
+                $itemDiscount += $disc;
+                $itemIds[] = $item->id;
+
+                // 4. Deduct new stock
+                $product = Product::find($item->product_id);
+                if ($product) {
+                    $oldStock = $product->stock;
+                    $product->stock -= $qty;
+                    $product->save();
+
+                    StockMutation::create([
+                        'product_id' => $product->id,
+                        'type' => 'out',
+                        'quantity' => $qty,
+                        'stock_before' => $oldStock,
+                        'stock_after' => $product->stock,
+                        'reference_type' => Sale::class,
+                        'reference_id' => $sale->id,
+                        'notes' => 'Update transaksi '.$sale->invoice_number,
+                        'created_by' => auth()->id(),
+                    ]);
+                }
+            }
+
+            // 5. Delete items that were removed (not in submitted list)
+            SaleItem::where('sale_id', $sale->id)->whereNotIn('id', $itemIds)->delete();
+
+            // 6. Recalculate totals
+            $tax = 0;
+            if ($sale->tax_id) {
+                $taxRate = Tax::find($sale->tax_id)?->rate ?? 0;
+                $tax = round(($subtotal - $itemDiscount) * $taxRate / 100);
+            }
+            $totalDiscount = $sale->total_discount;
+            $total = max(0, $subtotal + $tax - $totalDiscount - $itemDiscount);
+
+            // 7. Update sale
+            $sale->update([
+                'status' => $validated['status'],
+                'subtotal' => $subtotal,
+                'item_discount' => $itemDiscount,
+                'tax' => $tax,
+                'total' => $total,
+            ]);
+
+            // 8. Update receivable if exists
+            $receivable = Receivable::where('sale_id', $sale->id)->first();
+            if ($receivable) {
+                $receivable->update([
+                    'amount' => $total,
+                    'remaining_amount' => max(0, $total - $receivable->paid_amount),
+                ]);
+            }
+
+            // 9. Update cash transaction if exists
+            $cashTransaction = CashTransaction::where('description', 'Penjualan POS - '.$sale->invoice_number)
+                ->where('type', 'in')
+                ->first();
+            if ($cashTransaction) {
+                $oldAmount = $cashTransaction->amount;
+                $cashTransaction->update(['amount' => $total]);
+
+                $cashAccount = CashAccount::find($cashTransaction->cash_account_id);
+                if ($cashAccount) {
+                    $cashAccount->current_balance = $cashAccount->current_balance - $oldAmount + $total;
+                    $cashAccount->save();
+                }
+            }
+
+            // 10. Update journal if exists
+            $journal = Journal::where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->first();
+            if ($journal) {
+                $journal->update([
+                    'total_debit' => $total,
+                    'total_credit' => $total,
+                ]);
+                JournalEntry::where('journal_id', $journal->id)->update([
+                    'debit' => DB::raw("CASE WHEN debit > 0 THEN {$total} ELSE 0 END"),
+                    'credit' => DB::raw("CASE WHEN credit > 0 THEN {$total} ELSE 0 END"),
+                ]);
+            }
+        });
+
+        return redirect()->route('pos.detail', $sale)->with('success', 'Transaksi berhasil diperbarui.');
+    }
+
     public function destroy(Sale $sale)
     {
         if (! auth()->user()->can('delete_sale')) {
