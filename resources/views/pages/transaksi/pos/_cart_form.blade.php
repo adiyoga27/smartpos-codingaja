@@ -69,13 +69,7 @@
                     @endforeach
                 </select>
             </div>
-            <div>
-                <label class="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Bayar (Rp)</label>
-                <input type="text" name="paid_amount" id="paidAmount" class="form-input text-xs font-mono py-1.5" value="0" inputmode="numeric"
-                       @input="updateChange()"
-                       @focus="$el.value = $el.value.replace(/\D/g, '')"
-                       @blur="$el.value = parseInt($el.value.replace(/\D/g, ''), 10).toLocaleString('id-ID')" />
-            </div>
+          
         </div>
 
         <div id="accountPanel" style="display:none;">
@@ -159,7 +153,15 @@
             </div>
             <input type="hidden" name="total_discount" id="totalAddDisc" value="0">
         </div>
+          <div>
+                <label class="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Bayar (Rp)</label>
+                <input type="text" name="paid_amount" id="paidAmount" class="form-input text-xs font-mono py-1.5" value="0" inputmode="numeric"
+                       @input="updateChange()"
+                       @focus="$el.value = $el.value.replace(/\D/g, '')"
+                       @blur="$el.value = parseInt($el.value.replace(/\D/g, ''), 10).toLocaleString('id-ID')" />
+            </div>
     </div>
+    
 
     <div class="border-t border-slate-200 bg-white p-3 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20 relative">
         <div class="flex justify-between items-center mb-1">
