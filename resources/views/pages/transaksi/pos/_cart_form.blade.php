@@ -115,14 +115,29 @@
             <input type="hidden" name="due_date" :value="creditTerm !== 'custom' ? getComputedDueDate() : creditDueDate">
         </div>
 
-        <div>
-            <label class="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Diskon / Catatan</label>
-            <div class="flex gap-2 mt-0.5">
-                <input type="number" x-model.number="additionalDiscount" class="form-input text-xs font-mono py-1.5 w-20" value="0"
-                       @input="updateTotals()" placeholder="Diskon"/>
-                <textarea name="notes" class="form-input text-xs flex-1 py-1.5 min-w-0" rows="2" placeholder="Catatan..."></textarea>
-            </div>
-        </div>
+ <div>
+    <label class="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+        Diskon / Catatan
+    </label>
+
+    <div class="flex flex-col gap-2 mt-0.5">
+        <input
+            type="number"
+            x-model.number="additionalDiscount"
+            class="form-input text-xs font-mono py-1.5 w-20"
+            value="0"
+            @input="updateTotals()"
+            placeholder="Diskon"
+        />
+
+        <textarea
+            name="notes"
+            class="form-input text-xs py-1.5"
+            rows="2"
+            placeholder="Catatan..."
+        ></textarea>
+    </div>
+</div>
 
         <div class="bg-white rounded-lg p-2.5 space-y-1 border border-slate-200">
             <div class="flex justify-between text-[11px]">
