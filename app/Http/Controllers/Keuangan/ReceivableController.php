@@ -62,6 +62,7 @@ class ReceivableController extends Controller
 
     public function receiveForm(Receivable $receivable)
     {
+        $receivable->load(['payments.cashAccount', 'customer']);
         $cashAccounts = CashAccount::active()->get();
 
         return view('pages.keuangan.receivables.receive', compact('receivable', 'cashAccounts'));

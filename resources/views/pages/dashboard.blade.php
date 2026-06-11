@@ -185,6 +185,105 @@
     </div>
 </div>
 
+<!-- Upcoming Payments Row -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+    <!-- Upcoming Payables -->
+    <div class="card border-t-4 border-t-red-500">
+        <div class="card-header flex items-center justify-between">
+            <span class="flex items-center gap-2 font-bold text-slate-800">
+                <i class="bi bi-calendar-x text-red-500"></i>
+                Hutang Jatuh Tempo (7 Hari Kedepan)
+            </span>
+            <span class="badge badge-danger">{{ count($upcomingPayables) }} Tagihan</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Dokumen</th>
+                        <th>Supplier</th>
+                        <th>Jatuh Tempo</th>
+                        <th class="text-right">Sisa Hutang</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($upcomingPayables as $payable)
+                    <tr>
+                        <td>
+                            <a href="{{ route('keuangan.payables.pay', $payable) }}" class="text-primary-600 font-medium text-xs hover:underline">
+                                {{ $payable->document_number }}
+                            </a>
+                        </td>
+                        <td>{{ $payable->supplier?->name ?? 'Umum' }}</td>
+                        <td>
+                            <span class="text-xs font-medium px-2 py-1 rounded-md {{ $payable->due_date < now() ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600' }}">
+                                {{ $payable->due_date->format('d/m/Y') }}
+                            </span>
+                        </td>
+                        <td class="text-right font-bold text-slate-800">{{ formatRupiah($payable->remaining_amount) }}</td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="4" class="text-center text-slate-400 py-6">
+                            <i class="bi bi-emoji-smile text-2xl text-emerald-400 block mb-2"></i>
+                            Tidak ada hutang jatuh tempo dalam 7 hari kedepan
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Upcoming Receivables -->
+    <div class="card border-t-4 border-t-emerald-500">
+        <div class="card-header flex items-center justify-between">
+            <span class="flex items-center gap-2 font-bold text-slate-800">
+                <i class="bi bi-calendar-check text-emerald-500"></i>
+                Piutang Jatuh Tempo (7 Hari Kedepan)
+            </span>
+            <span class="badge bg-emerald-100 text-emerald-600">{{ count($upcomingReceivables) }} Tagihan</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Dokumen</th>
+                        <th>Customer</th>
+                        <th>Jatuh Tempo</th>
+                        <th class="text-right">Sisa Piutang</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($upcomingReceivables as $receivable)
+                    <tr>
+                        <td>
+                            <a href="{{ route('keuangan.receivables.receive', $receivable) }}" class="text-primary-600 font-medium text-xs hover:underline">
+                                {{ $receivable->document_number }}
+                            </a>
+                        </td>
+                        <td>{{ $receivable->customer?->name ?? 'Umum' }}</td>
+                        <td>
+                            <span class="text-xs font-medium px-2 py-1 rounded-md {{ $receivable->due_date < now() ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600' }}">
+                                {{ $receivable->due_date->format('d/m/Y') }}
+                            </span>
+                        </td>
+                        <td class="text-right font-bold text-slate-800">{{ formatRupiah($receivable->remaining_amount) }}</td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="4" class="text-center text-slate-400 py-6">
+                            <i class="bi bi-emoji-smile text-2xl text-emerald-400 block mb-2"></i>
+                            Tidak ada piutang jatuh tempo dalam 7 hari kedepan
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
     var salesData = @json($sales7Days->map(fn($s)=> ['x'=>$s->date, 'y'=>(float)$s->total]));

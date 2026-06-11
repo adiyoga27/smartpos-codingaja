@@ -44,10 +44,25 @@ class DashboardController extends Controller
         $overduePayables = Payable::where('due_date', '<', $today)->where('status', '!=', 'paid')->count();
         $overdueReceivables = Receivable::where('due_date', '<', $today)->where('status', '!=', 'paid')->count();
 
+        $upcomingPayables = Payable::with('supplier')
+            ->where('status', '!=', 'paid')
+            ->whereNotNull('due_date')
+            ->whereBetween('due_date', [$today, $today->copy()->addDays(7)])
+            ->orderBy('due_date', 'asc')
+            ->get();
+
+        $upcomingReceivables = Receivable::with('customer')
+            ->where('status', '!=', 'paid')
+            ->whereNotNull('due_date')
+            ->whereBetween('due_date', [$today, $today->copy()->addDays(7)])
+            ->orderBy('due_date', 'asc')
+            ->get();
+
         return view('pages.dashboard', compact(
             'salesToday', 'purchasesThisMonth', 'totalReceivable', 'totalPayable',
             'recentSales', 'lowStockProducts', 'sales7Days', 'topProducts',
-            'overduePayables', 'overdueReceivables'
+            'overduePayables', 'overdueReceivables',
+            'upcomingPayables', 'upcomingReceivables'
         ));
     }
 }
