@@ -95,12 +95,12 @@
 </div>
 
 @if(!in_array($purchase->status, ['completed','cancelled']))
-<div class="card border-primary">
+<div class="card border-primary" x-data="receiveForm()">
     <div class="card-header bg-primary-50"><h6 class="mb-0"><i class="bi bi-box-arrow-in-down"></i> Penerimaan Barang</h6></div>
     <div class="card-body">
-        <form action="{{ route('transaksi.purchases.receive', $purchase) }}" method="POST">
+        <form action="{{ route('transaksi.purchases.receive', $purchase) }}" method="POST" @submit.prevent="handleSubmit">
             @csrf @method('PATCH')
-            <div class="table-responsive">
+            <div class="table-responsive mb-4">
                 <table class="table table-bordered">
                     <thead class="table-light"><tr><th>Produk</th><th class="text-center">Qty Order</th><th class="text-center">Sudah Diterima</th><th class="text-center" style="min-width:140px">Qty Terima</th></tr></thead>
                     <tbody>
@@ -121,9 +121,73 @@
                     </tbody>
                 </table>
             </div>
+
+            <div class="bg-slate-50 rounded-lg p-4 mb-4">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                        <i class="bi bi-wallet2 text-slate-500"></i> Metode Pembayaran
+                    </span>
+                    <button type="button" @click="addPayment()" class="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+                        <i class="bi bi-plus-circle text-sm"></i> Tambah
+                    </button>
+                </div>
+
+                <template x-for="(pmt, idx) in payments" :key="idx">
+                    <div class="flex items-center gap-2 mb-2 p-2 bg-white rounded-lg border border-slate-200">
+                        <select class="form-select form-select-sm flex-1" :data-idx="idx" x-ref="selects" required>
+                            <option value="">- Pilih Kas/Bank -</option>
+                            @foreach($cashAccounts as $ca)
+                            <option value="{{ $ca->id }}">{{ $ca->name }} ({{ formatRupiah($ca->current_balance) }})</option>
+                            @endforeach
+                        </select>
+                        <div class="relative w-32">
+                            <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 z-10">Rp</span>
+                            <input type="text" x-model="pmt.amount" class="form-input form-input-sm pl-7 text-right text-sm" placeholder="0">
+                        </div>
+                        <button type="button" @click="payments.splice(idx, 1)" class="text-red-400 hover:text-red-600 p-1 flex-shrink-0">
+                            <i class="bi bi-x-circle text-sm"></i>
+                        </button>
+                    </div>
+                </template>
+
+                <div x-show="payments.length === 0" class="text-center py-3 text-xs text-slate-400">
+                    Belum ada metode pembayaran. Klik <span class="text-blue-500 font-medium">Tambah</span> jika ada pembayaran.
+                </div>
+
+                <div class="flex justify-between items-center mt-3 pt-3 border-t border-slate-200" x-show="payments.length > 0">
+                    <span class="text-xs text-slate-500">Total Dibayar</span>
+                    <span class="text-sm font-bold text-emerald-600" x-text="formatRp(paidTotal())"></span>
+                </div>
+            </div>
+
             <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Simpan Penerimaan</button>
         </form>
     </div>
 </div>
 @endif
+@push('scripts')
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('receiveForm', () => ({
+        payments: [],
+        addPayment() { this.payments.push({ amount: '' }); },
+        paidTotal() { return this.payments.reduce((s, p) => s + (parseInt(p.amount) || 0), 0); },
+        formatRp(angka) { return 'Rp ' + Math.round(parseFloat(angka)).toLocaleString('id-ID'); },
+        handleSubmit(e) {
+            let form = e.target;
+            form.querySelectorAll('input[name^="payments["]').forEach(el => el.remove());
+            this.payments.forEach((p, i) => {
+                let sel = form.querySelector(`select[data-idx="${i}"]`);
+                if (sel && sel.value && parseInt(p.amount) > 0) {
+                    form.insertAdjacentHTML('beforeend',
+                        `<input type="hidden" name="payments[${i}][cash_account_id]" value="${sel.value}">` +
+                        `<input type="hidden" name="payments[${i}][amount]" value="${p.amount}">`);
+                }
+            });
+            form.submit();
+        }
+    }));
+});
+</script>
+@endpush
 @endsection

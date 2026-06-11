@@ -7,7 +7,6 @@
 @section('content')
 <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
     <h4 class="font-bold mb-0">Daftar Piutang</h4>
-    <a href="{{ route('keuangan.receivables.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Tambah Manual</a>
 </div>
 <div class="card">
     <div class="card-body">

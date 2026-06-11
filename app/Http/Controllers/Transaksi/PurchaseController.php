@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Transaksi;
 
 use App\Http\Controllers\Controller;
 use App\Models\Account;
+use App\Models\CashAccount;
+use App\Models\CashTransaction;
 use App\Models\CompanySetting;
 use App\Models\Journal;
 use App\Models\JournalEntry;
@@ -131,8 +133,9 @@ class PurchaseController extends Controller
     public function show(Purchase $purchase)
     {
         $purchase->load('items.product', 'supplier', 'payables');
+        $cashAccounts = CashAccount::active()->get();
 
-        return view('pages.transaksi.purchases.show', compact('purchase'));
+        return view('pages.transaksi.purchases.show', compact('purchase', 'cashAccounts'));
     }
 
     public function receive(Request $request, Purchase $purchase)
@@ -140,9 +143,22 @@ class PurchaseController extends Controller
         if (! in_array($purchase->status, ['draft', 'sent', 'partial'])) {
             return back()->with('error', 'PO tidak dapat diterima.');
         }
+
+        $request->validate([
+            'items' => 'nullable|array',
+            'items.*' => 'numeric|min:0',
+            'payments' => 'nullable|array',
+            'payments.*.cash_account_id' => 'required|exists:cash_accounts,id',
+            'payments.*.amount' => 'required|numeric|min:500',
+        ]);
+
         DB::transaction(function () use ($request, $purchase) {
             $items = $request->input('items', []);
             foreach ($items as $itemId => $qty) {
+                $qty = (float) $qty;
+                if ($qty <= 0) {
+                    continue;
+                }
                 $item = PurchaseItem::find($itemId);
                 if ($item) {
                     $oldReceived = $item->received_quantity;
@@ -174,17 +190,45 @@ class PurchaseController extends Controller
             }
             $purchase->save();
 
+            $payments = $request->input('payments', []);
+            $paidAmount = 0;
+            foreach ($payments as $payment) {
+                $paidAmount += (float) $payment['amount'];
+            }
+            $purchase->paid_amount = min($paidAmount, $purchase->total);
+            $purchase->save();
+
             if ($purchase->status === 'completed') {
+                foreach ($payments as $payment) {
+                    $cashAccount = CashAccount::find($payment['cash_account_id']);
+                    if ($cashAccount) {
+                        $cashAccount->current_balance -= (float) $payment['amount'];
+                        $cashAccount->save();
+
+                        CashTransaction::create([
+                            'cash_account_id' => $cashAccount->id,
+                            'type' => 'out',
+                            'amount' => (float) $payment['amount'],
+                            'transaction_date' => now(),
+                            'description' => 'Pembayaran PO '.$purchase->document_number,
+                            'created_by' => auth()->id(),
+                        ]);
+                    }
+                }
+
+                $remaining = max(0, $purchase->total - $paidAmount);
+
                 Payable::create([
                     'supplier_id' => $purchase->supplier_id,
                     'purchase_id' => $purchase->id,
                     'document_number' => $purchase->document_number,
                     'due_date' => $purchase->due_date,
                     'amount' => $purchase->total,
-                    'paid_amount' => 0,
-                    'remaining_amount' => $purchase->total,
-                    'status' => 'open',
+                    'paid_amount' => $paidAmount,
+                    'remaining_amount' => $remaining,
+                    'status' => $paidAmount > 0 ? ($remaining > 0 ? 'partial' : 'paid') : 'open',
                 ]);
+
                 $inventoryAccount = Account::where('code', '1-1300')->first();
                 $hutangAccount = Account::where('code', '2-1000')->first();
                 if ($inventoryAccount && $hutangAccount) {
@@ -201,6 +245,28 @@ class PurchaseController extends Controller
                     ]);
                     JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $inventoryAccount->id, 'debit' => $purchase->total, 'credit' => 0]);
                     JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $hutangAccount->id, 'debit' => 0, 'credit' => $purchase->total]);
+
+                    if ($paidAmount > 0 && ! empty($payments)) {
+                        $paymentJournal = Journal::create([
+                            'journal_number' => 'JUR-'.now()->format('Ymd').'-'.str_pad((Journal::count() + 1), 4, '0', STR_PAD_LEFT),
+                            'journal_date' => now(),
+                            'description' => 'Jurnal pembayaran PO '.$purchase->document_number,
+                            'source' => 'purchase_payment',
+                            'reference_id' => $purchase->id,
+                            'reference_type' => Purchase::class,
+                            'total_debit' => $paidAmount,
+                            'total_credit' => $paidAmount,
+                            'created_by' => auth()->id(),
+                        ]);
+                        JournalEntry::create(['journal_id' => $paymentJournal->id, 'account_id' => $hutangAccount->id, 'debit' => $paidAmount, 'credit' => 0]);
+
+                        foreach ($payments as $payment) {
+                            $cashAccount = CashAccount::find($payment['cash_account_id']);
+                            if ($cashAccount && $cashAccount->account_id) {
+                                JournalEntry::create(['journal_id' => $paymentJournal->id, 'account_id' => $cashAccount->account_id, 'debit' => 0, 'credit' => (float) $payment['amount']]);
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -219,10 +285,11 @@ class PurchaseController extends Controller
     {
         $suppliers = Supplier::pluck('name', 'id');
         $products = Product::active()->get();
+        $cashAccounts = CashAccount::active()->get();
         $prefix = CompanySetting::first()->doc_prefix_po ?? 'PO';
         $documentNumber = $prefix.'-DIRECT-'.now()->format('Ymd').'-'.str_pad((Purchase::withTrashed()->count() + 1), 4, '0', STR_PAD_LEFT);
 
-        return view('pages.transaksi.purchases.direct', compact('suppliers', 'products', 'documentNumber'));
+        return view('pages.transaksi.purchases.direct', compact('suppliers', 'products', 'cashAccounts', 'documentNumber'));
     }
 
     public function storeDirect(Request $request)
@@ -238,6 +305,9 @@ class PurchaseController extends Controller
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.discount' => 'nullable|numeric|min:0',
+            'payments' => 'nullable|array',
+            'payments.*.cash_account_id' => 'required|exists:cash_accounts,id',
+            'payments.*.amount' => 'required|numeric|min:500',
         ]);
 
         DB::transaction(function () use ($validated) {
@@ -249,6 +319,13 @@ class PurchaseController extends Controller
             $tax = 0;
             $total = $subtotal + $tax;
 
+            $paidAmount = 0;
+            if (! empty($validated['payments'])) {
+                foreach ($validated['payments'] as $payment) {
+                    $paidAmount += (float) $payment['amount'];
+                }
+            }
+
             $purchase = Purchase::create([
                 'document_number' => $validated['document_number'],
                 'supplier_id' => $validated['supplier_id'],
@@ -259,7 +336,7 @@ class PurchaseController extends Controller
                 'discount' => 0,
                 'tax' => $tax,
                 'total' => $total,
-                'paid_amount' => 0,
+                'paid_amount' => min($paidAmount, $total),
                 'notes' => $validated['notes'] ?? null,
                 'created_by' => auth()->id(),
             ]);
@@ -296,16 +373,39 @@ class PurchaseController extends Controller
                 }
             }
 
-            Payable::create([
-                'supplier_id' => $purchase->supplier_id,
-                'purchase_id' => $purchase->id,
-                'document_number' => $purchase->document_number,
-                'due_date' => $purchase->due_date,
-                'amount' => $purchase->total,
-                'paid_amount' => 0,
-                'remaining_amount' => $purchase->total,
-                'status' => 'open',
-            ]);
+            if (! empty($validated['payments'])) {
+                foreach ($validated['payments'] as $payment) {
+                    $cashAccount = CashAccount::find($payment['cash_account_id']);
+                    if ($cashAccount) {
+                        $cashAccount->current_balance -= (float) $payment['amount'];
+                        $cashAccount->save();
+
+                        CashTransaction::create([
+                            'cash_account_id' => $cashAccount->id,
+                            'type' => 'out',
+                            'amount' => (float) $payment['amount'],
+                            'transaction_date' => now(),
+                            'description' => 'Pembayaran pembelian '.$purchase->document_number,
+                            'created_by' => auth()->id(),
+                        ]);
+                    }
+                }
+            }
+
+            $remaining = max(0, $total - $paidAmount);
+
+            if ($remaining > 0) {
+                Payable::create([
+                    'supplier_id' => $purchase->supplier_id,
+                    'purchase_id' => $purchase->id,
+                    'document_number' => $purchase->document_number,
+                    'due_date' => $purchase->due_date,
+                    'amount' => $purchase->total,
+                    'paid_amount' => $paidAmount,
+                    'remaining_amount' => $remaining,
+                    'status' => $paidAmount > 0 ? 'partial' : 'open',
+                ]);
+            }
 
             $inventoryAccount = Account::where('code', '1-1300')->first();
             $hutangAccount = Account::where('code', '2-1000')->first();
@@ -323,6 +423,28 @@ class PurchaseController extends Controller
                 ]);
                 JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $inventoryAccount->id, 'debit' => $purchase->total, 'credit' => 0]);
                 JournalEntry::create(['journal_id' => $journal->id, 'account_id' => $hutangAccount->id, 'debit' => 0, 'credit' => $purchase->total]);
+
+                if ($paidAmount > 0 && ! empty($validated['payments'])) {
+                    $paymentJournal = Journal::create([
+                        'journal_number' => 'JUR-'.now()->format('Ymd').'-'.str_pad((Journal::count() + 1), 4, '0', STR_PAD_LEFT),
+                        'journal_date' => now(),
+                        'description' => 'Jurnal pembayaran pembelian '.$purchase->document_number,
+                        'source' => 'purchase_payment',
+                        'reference_id' => $purchase->id,
+                        'reference_type' => Purchase::class,
+                        'total_debit' => $paidAmount,
+                        'total_credit' => $paidAmount,
+                        'created_by' => auth()->id(),
+                    ]);
+                    JournalEntry::create(['journal_id' => $paymentJournal->id, 'account_id' => $hutangAccount->id, 'debit' => $paidAmount, 'credit' => 0]);
+
+                    foreach ($validated['payments'] as $payment) {
+                        $cashAccount = CashAccount::find($payment['cash_account_id']);
+                        if ($cashAccount && $cashAccount->account_id) {
+                            JournalEntry::create(['journal_id' => $paymentJournal->id, 'account_id' => $cashAccount->account_id, 'debit' => 0, 'credit' => (float) $payment['amount']]);
+                        }
+                    }
+                }
             }
         });
 

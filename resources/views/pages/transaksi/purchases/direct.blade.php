@@ -204,6 +204,51 @@
                         </div>
                     </div>
 
+                    <!-- Metode Pembayaran -->
+                    <div class="pt-4 border-t border-slate-100">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                                <i class="bi bi-wallet2 text-slate-500"></i> Metode Pembayaran
+                            </span>
+                            <button type="button" @click="addPayment()" class="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+                                <i class="bi bi-plus-circle text-sm"></i> Tambah
+                            </button>
+                        </div>
+
+                        <template x-for="(pmt, idx) in payments" :key="idx">
+                            <div class="flex items-center gap-2 mb-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
+                                <select :name="'payments['+idx+'][cash_account_id]'" class="form-select text-xs py-1.5 flex-1" required>
+                                    <option value="">- Pilih Kas/Bank -</option>
+                                    @foreach($cashAccounts as $ca)
+                                    <option value="{{ $ca->id }}">{{ $ca->name }} ({{ formatRupiah($ca->current_balance) }})</option>
+                                    @endforeach
+                                </select>
+                                <div class="relative w-32">
+                                    <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 z-10">Rp</span>
+                                    <input type="text" :value="pmt.amount" class="form-input text-xs py-1.5 pl-7 text-right" placeholder="0"
+                                           @input="pmt.amount = $event.target.value.replace(/[^0-9]/g, '')"
+                                           :name="'payments['+idx+'][amount]'" required>
+                                </div>
+                                <button type="button" @click="payments.splice(idx, 1)" class="text-red-400 hover:text-red-600 p-1 flex-shrink-0">
+                                    <i class="bi bi-x-circle text-sm"></i>
+                                </button>
+                            </div>
+                        </template>
+
+                        <div x-show="payments.length === 0" class="text-center py-3 text-xs text-slate-400 bg-slate-50 rounded-lg">
+                            Belum ada metode pembayaran. Klik <span class="text-blue-500 font-medium">Tambah</span>.
+                        </div>
+
+                        <div class="flex justify-between items-center mt-3 pt-3 border-t border-slate-100" x-show="payments.length > 0">
+                            <span class="text-xs text-slate-500">Total Dibayar</span>
+                            <span class="text-sm font-bold text-emerald-600" x-text="formatRp(paidTotal())"></span>
+                        </div>
+                        <div class="flex justify-between items-center mt-1" x-show="payments.length > 0 && remaining() > 0">
+                            <span class="text-xs text-slate-500">Sisa Hutang</span>
+                            <span class="text-sm font-bold text-red-500" x-text="formatRp(remaining())"></span>
+                        </div>
+                    </div>
+
                     <div class="space-y-3 pt-4 border-t border-slate-100">
                         <button type="submit" class="btn w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-semibold flex items-center justify-center gap-2" :disabled="Object.keys(selectedItems).length === 0">
                             <i class="bi bi-check2-circle text-lg"></i>
@@ -323,6 +368,7 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('directForm', () => ({
         selectedItems: {},
+        payments: [],
         showModal: false,
         searchQuery: '',
         products: {!! $products->map(fn($p) => ['id' => $p->id, 'name' => $p->name, 'code' => $p->code, 'price' => (float) $p->purchase_price, 'selling_price' => (float) $p->selling_price, 'wholesale_price' => (float) $p->wholesale_price, 'photo' => $p->photo ? asset('storage/'.$p->photo) : ''])->values()->toJson() !!},
@@ -332,6 +378,10 @@ document.addEventListener('alpine:init', () => {
         discountTotal() { return Object.values(this.selectedItems).reduce((s, it) => s + (it.discount || 0), 0); },
         grandTotal() { return Math.max(0, this.subtotal() - this.discountTotal()); },
         lineTotal(it) { return this.formatRp(Math.max(0, it.qty * it.price - (it.discount || 0))); },
+        paidTotal() { return this.payments.reduce((s, p) => s + (parseInt(p.amount) || 0), 0); },
+        remaining() { return Math.max(0, this.grandTotal() - this.paidTotal()); },
+
+        addPayment() { this.payments.push({ cash_account_id: '', amount: '' }); },
 
         parseRupiah(val) { return parseFloat((val || '0').replace(/\./g, '').replace(',', '.')) || 0; },
         fmtNum(val) { let n = parseFloat(val) || 0; return n % 1 === 0 ? n.toLocaleString('id-ID') : n.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
@@ -393,6 +443,13 @@ document.addEventListener('alpine:init', () => {
                     `<input type="hidden" name="items[${idx}][unit_price]" value="${it.price}">` +
                     `<input type="hidden" name="items[${idx}][discount]" value="${it.discount || 0}">`);
                 idx++;
+            });
+            this.payments.forEach((p, i) => {
+                if (p.cash_account_id && parseInt(p.amount) > 0) {
+                    form.insertAdjacentHTML('beforeend',
+                        `<input type="hidden" name="payments[${i}][cash_account_id]" value="${p.cash_account_id}">` +
+                        `<input type="hidden" name="payments[${i}][amount]" value="${p.amount}">`);
+                }
             });
             form.submit();
         }
