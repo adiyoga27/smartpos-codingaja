@@ -68,10 +68,11 @@ class PurchaseController extends Controller
     {
         $suppliers = Supplier::active()->pluck('name', 'id');
         $products = Product::active()->get();
+        $cashAccounts = CashAccount::active()->get();
         $prefix = CompanySetting::first()->doc_prefix_po ?? 'PO';
         $documentNumber = $prefix.'-'.now()->format('Ymd').'-'.str_pad((Purchase::withTrashed()->count() + 1), 4, '0', STR_PAD_LEFT);
 
-        return view('pages.transaksi.purchases.create', compact('suppliers', 'products', 'documentNumber'));
+        return view('pages.transaksi.purchases.create', compact('suppliers', 'products', 'cashAccounts', 'documentNumber'));
     }
 
     public function store(Request $request)
@@ -217,12 +218,13 @@ class PurchaseController extends Controller
                 }
 
                 $remaining = max(0, $purchase->total - $paidAmount);
+                $dueDate = $purchase->due_date ?? ($remaining > 0 ? now()->addDays(30)->format('Y-m-d') : null);
 
                 Payable::create([
                     'supplier_id' => $purchase->supplier_id,
                     'purchase_id' => $purchase->id,
                     'document_number' => $purchase->document_number,
-                    'due_date' => $purchase->due_date,
+                    'due_date' => $dueDate,
                     'amount' => $purchase->total,
                     'paid_amount' => $paidAmount,
                     'remaining_amount' => $remaining,
@@ -393,13 +395,14 @@ class PurchaseController extends Controller
             }
 
             $remaining = max(0, $total - $paidAmount);
+            $dueDate = $validated['due_date'] ?? ($remaining > 0 ? now()->addDays(30)->format('Y-m-d') : null);
 
             if ($remaining > 0) {
                 Payable::create([
                     'supplier_id' => $purchase->supplier_id,
                     'purchase_id' => $purchase->id,
                     'document_number' => $purchase->document_number,
-                    'due_date' => $purchase->due_date,
+                    'due_date' => $dueDate,
                     'amount' => $purchase->total,
                     'paid_amount' => $paidAmount,
                     'remaining_amount' => $remaining,

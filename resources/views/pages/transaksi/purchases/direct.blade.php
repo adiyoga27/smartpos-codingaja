@@ -52,11 +52,11 @@
                                 <input type="date" name="purchase_date" class="form-input w-full pl-10" value="{{ now()->format('Y-m-d') }}" required>
                             </div>
                         </div>
-                        <div class="space-y-1.5">
-                            <label class="text-sm font-medium text-slate-700">Jatuh Tempo <span class="text-slate-400 font-normal text-xs">(Opsional)</span></label>
+                        <div class="space-y-1.5" x-show="remaining() > 0" x-cloak>
+                            <label class="text-sm font-medium text-slate-700">Jatuh Tempo <span class="text-red-500">*</span></label>
                             <div class="relative">
                                 <i class="bi bi-calendar-check absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none"></i>
-                                <input type="date" name="due_date" class="form-input w-full pl-10">
+                                <input type="date" name="due_date" class="form-input w-full pl-10" :required="remaining() > 0">
                             </div>
                         </div>
                         <div class="md:col-span-2 space-y-1.5">

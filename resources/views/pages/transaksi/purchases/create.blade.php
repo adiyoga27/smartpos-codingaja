@@ -27,10 +27,53 @@
                     <label class="form-label text-xs">Tanggal</label>
                     <input type="date" name="purchase_date" class="form-input form-input-sm" value="{{ now()->format('Y-m-d') }}" required>
                 </div>
-                <div>
-                    <label class="form-label text-xs">Jatuh Tempo</label>
-                    <input type="date" name="due_date" class="form-input form-input-sm">
+                <div class="col-span-full">
+                    <label class="form-label text-xs">Status Pembayaran</label>
+                    <div class="flex items-center gap-4 mt-1">
+                        <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+                            <input type="radio" name="payment_status" value="credit" x-model="paymentStatus" class="form-radio text-primary-600">
+                            <span>Hutang</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+                            <input type="radio" name="payment_status" value="cash" x-model="paymentStatus" class="form-radio text-primary-600">
+                            <span>Lunas / Tunai</span>
+                        </label>
+                    </div>
                 </div>
+                <div x-show="paymentStatus === 'credit'" x-cloak>
+                    <label class="form-label text-xs">Jatuh Tempo <span class="text-red-500">*</span></label>
+                    <input type="date" name="due_date" class="form-input form-input-sm" :required="paymentStatus === 'credit'">
+                </div>
+                <template x-if="paymentStatus === 'cash'">
+                    <div class="col-span-full">
+                        <label class="form-label text-xs">Pembayaran</label>
+                        <div class="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-medium text-emerald-700">Metode Pembayaran</span>
+                                <button type="button" @click="addPayment()" class="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1">
+                                    <i class="bi bi-plus-circle"></i> Tambah
+                                </button>
+                            </div>
+                            <template x-for="(pmt, idx) in payments" :key="idx">
+                                <div class="flex items-center gap-2 mb-1.5">
+                                    <select class="form-select form-select-sm flex-1" :class="'payment-select-'+idx" required>
+                                        <option value="">- Pilih Kas/Bank -</option>
+                                        @foreach($cashAccounts as $ca)
+                                        <option value="{{ $ca->id }}">{{ $ca->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <input type="text" x-model="pmt.amount" class="form-input form-input-sm text-right" placeholder="0" style="width:120px">
+                                    <button type="button" @click="payments.splice(idx, 1)" class="text-red-400 hover:text-red-600"><i class="bi bi-x-circle"></i></button>
+                                </div>
+                            </template>
+                            <div class="flex justify-between items-center mt-2 pt-2 border-t border-emerald-200" x-show="payments.length > 0">
+                                <span class="text-xs text-emerald-600">Total Dibayar</span>
+                                <span class="text-sm font-bold text-emerald-700" x-text="formatRp(paidTotal())"></span>
+                            </div>
+                            <p x-show="payments.length === 0" class="text-xs text-emerald-500 mt-1">Pembayaran akan dicatat saat PO diterima.</p>
+                        </div>
+                    </div>
+                </template>
             </div>
             <div class="mt-3">
                 <label class="form-label text-xs">Catatan</label>
@@ -159,6 +202,8 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('poForm', () => ({
         selectedItems: {},
+        payments: [],
+        paymentStatus: 'credit',
         showModal: false,
         searchQuery: '',
         products: {!! $products->map(fn($p) => ['id' => $p->id, 'name' => $p->name, 'code' => $p->code, 'price' => (float) $p->purchase_price, 'photo' => $p->photo ? asset('storage/'.$p->photo) : ''])->values()->toJson() !!},
@@ -168,6 +213,9 @@ document.addEventListener('alpine:init', () => {
         discountTotal() { return Object.values(this.selectedItems).reduce((s, it) => s + (it.discount || 0), 0); },
         grandTotal() { return Math.max(0, this.subtotal() - this.discountTotal()); },
         lineTotal(it) { return this.formatRp(Math.max(0, it.qty * it.price - (it.discount || 0))); },
+        paidTotal() { return this.payments.reduce((s, p) => s + (parseInt(p.amount) || 0), 0); },
+
+        addPayment() { this.payments.push({ amount: '' }); },
 
         parseRupiah(val) { return parseFloat((val || '0').replace(/\./g, '').replace(',', '.')) || 0; },
         fmtNum(val) { let n = parseFloat(val) || 0; return n % 1 === 0 ? n.toLocaleString('id-ID') : n.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
@@ -223,6 +271,16 @@ document.addEventListener('alpine:init', () => {
                     `<input type="hidden" name="items[${idx}][discount]" value="${it.discount || 0}">`);
                 idx++;
             });
+            if (this.paymentStatus === 'cash') {
+                this.payments.forEach((p, i) => {
+                    let sel = document.querySelector(`select.payment-select-${i}`);
+                    if (sel && sel.value && parseInt(p.amount) > 0) {
+                        form.insertAdjacentHTML('beforeend',
+                            `<input type="hidden" name="payments[${i}][cash_account_id]" value="${sel.value}">` +
+                            `<input type="hidden" name="payments[${i}][amount]" value="${p.amount}">`);
+                    }
+                });
+            }
             form.submit();
         }
     }));
