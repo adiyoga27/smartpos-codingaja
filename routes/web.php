@@ -73,6 +73,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('pos/print-a4/{sale}', [SaleController::class, 'printA4'])->name('pos.print-a4');
     Route::get('pos/print-thermal/{sale}', [SaleController::class, 'printThermal'])->name('pos.print-thermal');
     Route::get('pos/print-epson/{sale}', [SaleController::class, 'printEpson'])->name('pos.print-epson');
+    Route::delete('pos/riwayat/{sale}', [SaleController::class, 'destroy'])->name('pos.riwayat.destroy');
 
     // Hutang & Piutang
     Route::prefix('keuangan')->name('keuangan.')->group(function () {

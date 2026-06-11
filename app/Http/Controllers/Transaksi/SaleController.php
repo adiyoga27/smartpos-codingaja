@@ -13,6 +13,7 @@ use App\Models\JournalEntry;
 use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\Receivable;
+use App\Models\ReceivablePayment;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockMutation;
@@ -280,6 +281,9 @@ class SaleController extends Controller
                     if (auth()->user()->can('edit_sale')) {
                         $actions .= '<a href="'.route('pos.edit', $item).'" class="btn btn-sm btn-outline-warning" title="Edit"><i class="bi bi-pencil"></i></a>';
                     }
+                    if (auth()->user()->can('delete_sale')) {
+                        $actions .= '<button type="button" class="btn btn-sm btn-outline-danger btn-delete-sale" data-id="'.$item->id.'" data-invoice="'.$item->invoice_number.'" title="Hapus"><i class="bi bi-trash"></i></button>';
+                    }
                     $actions .= '</div>';
                 }
 
@@ -400,5 +404,74 @@ class SaleController extends Controller
             'success' => true,
             'customer' => ['id' => $customer->id, 'name' => $customer->name, 'code' => $customer->code],
         ]);
+    }
+
+    public function destroy(Sale $sale)
+    {
+        if (! auth()->user()->can('delete_sale')) {
+            abort(403);
+        }
+
+        if ($sale->saleReturns()->exists()) {
+            return response()->json(['success' => false, 'message' => 'Transaksi tidak dapat dihapus karena sudah ada retur.'], 422);
+        }
+
+        DB::transaction(function () use ($sale) {
+            foreach ($sale->items as $item) {
+                $product = Product::find($item->product_id);
+                if ($product) {
+                    $oldStock = $product->stock;
+                    $product->stock += $item->quantity;
+                    $product->save();
+
+                    StockMutation::create([
+                        'product_id' => $product->id,
+                        'type' => 'in',
+                        'quantity' => $item->quantity,
+                        'stock_before' => $oldStock,
+                        'stock_after' => $product->stock,
+                        'reference_type' => Sale::class,
+                        'reference_id' => $sale->id,
+                        'notes' => 'Pembatalan transaksi '.$sale->invoice_number,
+                        'created_by' => auth()->id(),
+                    ]);
+                }
+            }
+
+            StockMutation::where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->where('type', 'out')
+                ->delete();
+
+            $receivable = Receivable::where('sale_id', $sale->id)->first();
+            if ($receivable) {
+                ReceivablePayment::where('receivable_id', $receivable->id)->delete();
+                $receivable->delete();
+            }
+
+            $cashTransaction = CashTransaction::where('description', 'Penjualan POS - '.$sale->invoice_number)
+                ->where('type', 'in')
+                ->first();
+            if ($cashTransaction) {
+                $cashAccount = CashAccount::find($cashTransaction->cash_account_id);
+                if ($cashAccount) {
+                    $cashAccount->current_balance -= $cashTransaction->amount;
+                    $cashAccount->save();
+                }
+                $cashTransaction->delete();
+            }
+
+            $journal = Journal::where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->first();
+            if ($journal) {
+                JournalEntry::where('journal_id', $journal->id)->delete();
+                $journal->delete();
+            }
+
+            $sale->delete();
+        });
+
+        return response()->json(['success' => true, 'message' => 'Transaksi berhasil dihapus.']);
     }
 }

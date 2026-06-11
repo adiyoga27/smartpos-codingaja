@@ -89,7 +89,7 @@ class RolePermissionSeeder extends Seeder
             'view_payment_method',
             'view_purchase', 'create_purchase', 'edit_purchase', 'delete_purchase',
             'view_purchase_return', 'create_purchase_return',
-            'view_sale', 'create_sale', 'view_sale_return', 'create_sale_return',
+            'view_sale', 'create_sale', 'edit_sale', 'delete_sale', 'view_sale_return', 'create_sale_return',
             'view_sales_order', 'create_sales_order', 'view_delivery_order',
             'view_payable', 'view_receivable',
             'view_cash_account', 'create_cash_account', 'edit_cash_account',

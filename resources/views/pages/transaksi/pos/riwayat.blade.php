@@ -62,6 +62,27 @@ $(document).ready(function() {
     $('#btn-filter').on('click', function() {
         table.ajax.reload();
     });
+
+    $(document).on('click', '.btn-delete-sale', function() {
+        var btn = $(this);
+        var id = btn.data('id');
+        var invoice = btn.data('invoice');
+        if (confirm('Hapus transaksi ' + invoice + '?\n\nStok akan dikembalikan dan semua data terkait akan dihapus.')) {
+            $.ajax({
+                url: '{{ url('pos/riwayat') }}/' + id,
+                type: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                success: function(res) {
+                    alert(res.message);
+                    table.ajax.reload();
+                },
+                error: function(xhr) {
+                    var msg = xhr.responseJSON?.message || 'Gagal menghapus transaksi.';
+                    alert(msg);
+                }
+            });
+        }
+    });
 });
 </script>
 @endpush
