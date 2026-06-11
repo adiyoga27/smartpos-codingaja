@@ -131,7 +131,15 @@
             placeholder="Catatan..."
         ></textarea>
     </div>
+    
 </div>
+<div>
+                <label class="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Bayar (Rp)</label>
+                <input type="text" name="paid_amount" id="paidAmount" class="form-input text-xs font-mono py-1.5" value="0" inputmode="numeric"
+                       @input="updateChange()"
+                       @focus="$el.value = $el.value.replace(/\D/g, '')"
+                       @blur="$el.value = parseInt($el.value.replace(/\D/g, ''), 10).toLocaleString('id-ID')" />
+            </div>
 
         <div class="bg-white rounded-lg p-2.5 space-y-1 border border-slate-200">
             <div class="flex justify-between text-[11px]">
@@ -153,13 +161,7 @@
             </div>
             <input type="hidden" name="total_discount" id="totalAddDisc" value="0">
         </div>
-          <div>
-                <label class="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Bayar (Rp)</label>
-                <input type="text" name="paid_amount" id="paidAmount" class="form-input text-xs font-mono py-1.5" value="0" inputmode="numeric"
-                       @input="updateChange()"
-                       @focus="$el.value = $el.value.replace(/\D/g, '')"
-                       @blur="$el.value = parseInt($el.value.replace(/\D/g, ''), 10).toLocaleString('id-ID')" />
-            </div>
+          
     </div>
     
 
