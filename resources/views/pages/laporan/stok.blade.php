@@ -14,6 +14,18 @@
         <div class="overflow-x-auto">
             <table class="table table-striped mb-0" id="report-stok-table" style="width:100%">
                 <thead><tr><th>Kode</th><th>Nama</th><th>Kategori</th><th>Stok</th><th>Min</th><th>Status</th></tr></thead>
+                <tbody>
+                    @foreach($products as $p)
+                    <tr>
+                        <td>{{ $p->code }}</td>
+                        <td>{{ $p->name }}</td>
+                        <td>{{ $p->category?->name ?? '-' }}</td>
+                        <td>{{ $p->stock }}</td>
+                        <td>{{ $p->min_stock }}</td>
+                        <td>{{ $p->stock <= $p->min_stock ? 'Menipis' : 'Aman' }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
             </table>
         </div>
     </div>
@@ -23,9 +35,6 @@
 <script>
 $(document).ready(function() {
     $('#report-stok-table').DataTable({
-        processing: true,
-        serverSide: true,
-        ajax: '{{ route('laporan.stok') }}',
         pageLength: 25,
         dom: 'Bfrtip',
         buttons: [
@@ -38,9 +47,6 @@ $(document).ready(function() {
         language: {
             url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json'
         },
-        columnDefs: [
-            { orderable: false, targets: [5] }
-        ]
     });
 });
 </script>

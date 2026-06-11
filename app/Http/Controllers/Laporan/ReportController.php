@@ -192,32 +192,8 @@ class ReportController extends Controller
 
     public function stok(Request $request)
     {
-        if ($request->ajax()) {
-            $query = Product::with('category')->latest();
-            $draw = (int) $request->input('draw', 1);
-            $start = (int) $request->input('start', 0);
-            $length = (int) $request->input('length', 25);
-            $search = $request->input('search.value', '');
+        $products = Product::with('category')->orderBy('name')->get();
 
-            $total = $query->count();
-            if ($search) {
-                $query->where('name', 'like', '%'.$search.'%')->orWhere('code', 'like', '%'.$search.'%');
-            }
-            $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
-                return [
-                    $item->code,
-                    $item->name,
-                    $item->category?->name ?? '-',
-                    $item->stock,
-                    $item->min_stock,
-                    $item->stock <= $item->min_stock ? '<span class="badge bg-danger">Menipis</span>' : '<span class="badge bg-success">Aman</span>',
-                ];
-            });
-
-            return response()->json(['draw' => $draw, 'recordsTotal' => $total, 'recordsFiltered' => $filtered, 'data' => $data]);
-        }
-
-        return view('pages.laporan.stok');
+        return view('pages.laporan.stok', compact('products'));
     }
 }
