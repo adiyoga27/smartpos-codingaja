@@ -51,7 +51,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-3 gap-2">
+        <div class="grid grid-cols-2 gap-2">
             <div>
                 <label class="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Pembayaran</label>
                 <select name="payment_method_id" class="form-select text-xs py-1.5" id="paymentMethod" required>
