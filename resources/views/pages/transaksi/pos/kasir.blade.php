@@ -314,10 +314,8 @@ function posKasir() {
 
         filteredCustPicker() {
             let q = (this.custPickerSearch || '').toLowerCase().trim();
-            let targetType = this.posMode === 'reseller' ? 'wholesale' : 'retail';
-            let filtered = this.allCustomers.filter(c => c.type === targetType);
-            if (!q) return filtered;
-            return filtered.filter(c =>
+            if (!q) return this.allCustomers;
+            return this.allCustomers.filter(c =>
                 c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
             );
         },
