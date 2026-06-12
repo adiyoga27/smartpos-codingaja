@@ -622,9 +622,19 @@ function posKasir() {
             }))
             .then(({ ok, status, data, text }) => {
                 if (ok) {
-                    showToast(data?.message || 'Transaksi berhasil', 'success');
+                    showToast(data.message || 'Transaksi berhasil', 'success');
                     self.selectedCust = null;
+                    self.additionalDiscount = 0;
+                    let paidEl = document.getElementById('paidAmount');
+                    if (paidEl) paidEl.value = '0';
                     self.clearCart();
+                    let invEl = document.querySelector('input[name="invoice_number"]');
+                    if (invEl) {
+                        let now = new Date();
+                        let ymd = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
+                        let rand = Math.random().toString(36).substring(2, 7).toUpperCase();
+                        invEl.value = 'INV-' + ymd + '-' + rand;
+                    }
                     if (data?.sale_id && self.printerType !== 'none') {
                         let printUrl;
                         if (self.printerType === 'thermal') {
