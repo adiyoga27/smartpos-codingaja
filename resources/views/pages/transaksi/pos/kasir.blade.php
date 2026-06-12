@@ -688,6 +688,9 @@ function posKasir() {
         doPrintPreview() {
             let frame = document.getElementById('printPreviewFrame');
             if (frame) {
+                frame.style.transform = '';
+                frame.style.width = '';
+                frame.style.height = '';
                 frame.contentWindow.focus();
                 frame.contentWindow.print();
             }
