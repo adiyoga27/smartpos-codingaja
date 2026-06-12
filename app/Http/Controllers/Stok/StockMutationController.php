@@ -109,32 +109,30 @@ class StockMutationController extends Controller
     public function opnameHistory(Request $request)
     {
         if ($request->ajax()) {
-            $query = StockMutation::with(['product', 'creator'])
+            $query = StockMutation::with(['creator'])
+                ->selectRaw('opname_number, MIN(created_at) as created_at, MIN(created_by) as created_by, COUNT(*) as total_items')
                 ->where('type', 'opname')
-                ->latest();
+                ->whereNotNull('opname_number')
+                ->groupBy('opname_number')
+                ->latest('created_at');
 
             $draw = (int) $request->input('draw', 1);
             $start = (int) $request->input('start', 0);
             $length = (int) $request->input('length', 25);
             $search = $request->input('search.value', '');
 
-            $total = StockMutation::where('type', 'opname')->count();
+            $total = StockMutation::where('type', 'opname')->whereNotNull('opname_number')->distinct('opname_number')->count('opname_number');
             if ($search) {
-                $query->whereHas('product', fn ($q) => $q->where('name', 'like', '%'.$search.'%')->orWhere('code', 'like', '%'.$search.'%'));
+                $query->where('opname_number', 'like', '%'.$search.'%');
             }
             $filtered = $query->count();
             $data = $query->skip($start)->take($length)->get()->map(function ($item) {
-                $diff = $item->stock_after - $item->stock_before;
-                $diffBadge = $diff > 0 ? '<span class="text-emerald-600">+'.formatQty($diff).'</span>' : '<span class="text-red-600">'.formatQty($diff).'</span>';
-
                 return [
+                    $item->opname_number,
                     $item->created_at->format('d/m/Y H:i'),
-                    $item->product?->name ?? '-',
-                    $item->product?->code ?? '-',
-                    formatQty($item->stock_before),
-                    formatQty($item->stock_after),
-                    $diffBadge,
+                    $item->total_items.' produk',
                     $item->creator?->name ?? '-',
+                    '<a href="'.route('stok.opname.detail', $item->opname_number).'" class="btn btn-sm btn-outline-info">Detail</a>',
                 ];
             });
 
@@ -142,6 +140,16 @@ class StockMutationController extends Controller
         }
 
         return view('pages.stok.opname_history');
+    }
+
+    public function opnameDetail(string $opnameNumber)
+    {
+        $mutations = StockMutation::with(['product', 'creator'])
+            ->where('type', 'opname')
+            ->where('opname_number', $opnameNumber)
+            ->get();
+
+        return view('pages.stok.opname_detail', compact('mutations', 'opnameNumber'));
     }
 
     public function opnameSelect()
@@ -153,13 +161,7 @@ class StockMutationController extends Controller
 
     public function opnameForm(Request $request)
     {
-        $ids = $request->input('product_ids', []);
-
-        if (empty($ids)) {
-            return redirect()->route('stok.opname.select')->with('error', 'Pilih minimal 1 produk.');
-        }
-
-        $products = Product::active()->whereIn('id', $ids)->get();
+        $products = Product::active()->orderBy('name')->get();
 
         return view('pages.stok.opname', compact('products'));
     }
@@ -167,7 +169,14 @@ class StockMutationController extends Controller
     public function opnameStore(Request $request)
     {
         $items = $request->input('items', []);
-        DB::transaction(function () use ($items) {
+
+        $count = StockMutation::where('type', 'opname')
+            ->whereNotNull('opname_number')
+            ->distinct('opname_number')
+            ->count('opname_number');
+        $opnameNumber = 'OPN-'.now()->format('Ymd').'-'.str_pad((string) ($count + 1), 4, '0', STR_PAD_LEFT);
+
+        DB::transaction(function () use ($items, $opnameNumber) {
             foreach ($items as $productId => $physicalQty) {
                 $product = Product::find($productId);
                 if (! $product) {
@@ -187,6 +196,7 @@ class StockMutationController extends Controller
                     'stock_before' => $oldStock,
                     'stock_after' => $product->stock,
                     'notes' => 'Stock opname adjustment',
+                    'opname_number' => $opnameNumber,
                     'created_by' => auth()->id(),
                 ]);
             }

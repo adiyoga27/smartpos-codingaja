@@ -7,14 +7,20 @@
 @section('content')
 <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
     <h4 class="font-bold mb-0">Riwayat Stock Opname</h4>
-    <a href="{{ route('stok.opname.select') }}" class="btn btn-primary btn-md"><i class="bi bi-clipboard-check"></i> Lakukan Stock Opname</a>
+    <a href="{{ route('stok.opname.select') }}" class="btn btn-primary btn-md"><i class="bi bi-clipboard-check"></i> Stock Opname Baru</a>
 </div>
 <div class="card">
     <div class="card-body">
         <div class="overflow-x-auto">
             <table class="table table-striped" id="opname-history-table" style="width:100%">
                 <thead>
-                    <tr><th>Tanggal</th><th>Produk</th><th>Kode</th><th>Stok Sebelum</th><th>Stok Setelah</th><th>Selisih</th><th>User</th></tr>
+                    <tr>
+                        <th>Nomor Opname</th>
+                        <th>Tanggal</th>
+                        <th>Total Item</th>
+                        <th>User</th>
+                        <th class="text-center">Aksi</th>
+                    </tr>
                 </thead>
             </table>
         </div>
@@ -41,7 +47,7 @@ $(document).ready(function() {
             { extend: 'print', className: 'btn btn-secondary btn-sm', text: '<i class="bi bi-printer"></i>' },
         ],
         language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json' },
-        columnDefs: [{ orderable: false, targets: [] }]
+        columnDefs: [{ orderable: false, targets: [4] }]
     });
 });
 </script>

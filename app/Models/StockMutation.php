@@ -11,7 +11,7 @@ class StockMutation extends Model
 
     protected $fillable = [
         'product_id', 'type', 'quantity', 'stock_before', 'stock_after',
-        'reference_type', 'reference_id', 'notes', 'created_by',
+        'reference_type', 'reference_id', 'notes', 'opname_number', 'created_by',
     ];
 
     protected $casts = [
