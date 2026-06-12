@@ -168,6 +168,7 @@ class PayableController extends Controller
     public function show(Payable $payable)
     {
         $payable->load('supplier', 'purchase', 'payments.cashAccount');
+
         return view('pages.keuangan.payables.show', compact('payable'));
     }
 }
