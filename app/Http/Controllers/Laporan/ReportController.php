@@ -41,7 +41,9 @@ class ReportController extends Controller
                     });
             }
             $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) {
                 return [
                     $item->document_number,
                     $item->supplier?->name ?? '-',
@@ -77,7 +79,9 @@ class ReportController extends Controller
                     ->orWhere('customer_name', 'like', '%'.$search.'%');
             }
             $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) {
                 return [
                     $item->invoice_number,
                     $item->customer?->name ?? $item->customer_name ?? 'Umum',
@@ -110,7 +114,9 @@ class ReportController extends Controller
                     });
             }
             $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) {
                 return [
                     $item->document_number,
                     $item->supplier?->name ?? '-',
@@ -144,7 +150,9 @@ class ReportController extends Controller
                     });
             }
             $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) {
                 return [
                     $item->document_number,
                     $item->customer?->name ?? '-',

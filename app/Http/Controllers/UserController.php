@@ -23,7 +23,9 @@ class UserController extends Controller
                 $query->where('name', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%');
             }
             $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) {
                 $actions = '<a href="'.route('users.edit', $item).'" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a> ';
                 $actions .= '<form action="'.route('users.destroy', $item).'" method="POST" class="d-inline" onsubmit="return confirm(\'Hapus user ini?\')">'
                     .csrf_field().method_field('DELETE')

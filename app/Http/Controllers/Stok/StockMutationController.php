@@ -46,7 +46,9 @@ class StockMutationController extends Controller
                 $query->orderBy('stock', 'desc');
             }
 
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) {
                 $stockBadge = $item->stock <= $item->min_stock ? '<span class="badge bg-danger">'.formatQty($item->stock).'</span>' : formatQty($item->stock);
 
                 return [
@@ -80,7 +82,9 @@ class StockMutationController extends Controller
                 $query->where('notes', 'like', '%'.$search.'%');
             }
             $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) {
                 $typeBadge = match ($item->type) {
                     'in' => '<span class="badge bg-success">Masuk</span>',
                     'out' => '<span class="badge bg-danger">Keluar</span>',
@@ -126,7 +130,9 @@ class StockMutationController extends Controller
                 $query->where('opname_number', 'like', '%'.$search.'%');
             }
             $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) {
                 return [
                     $item->opname_number,
                     $item->created_at->format('d/m/Y H:i'),

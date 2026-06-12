@@ -32,7 +32,9 @@ class PurchaseReturnController extends Controller
                 $query->where('document_number', 'like', '%'.$search.'%');
             }
             $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) {
                 return [
                     $item->document_number,
                     $item->purchase?->document_number ?? '-',

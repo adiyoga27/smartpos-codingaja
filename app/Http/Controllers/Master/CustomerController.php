@@ -24,7 +24,9 @@ class CustomerController extends Controller
                 });
             }
             $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) {
                 return [
                     $item->code,
                     $item->name,

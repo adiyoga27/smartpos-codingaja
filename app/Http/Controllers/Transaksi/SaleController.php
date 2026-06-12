@@ -286,7 +286,9 @@ class SaleController extends Controller
                     ->orWhere('customer_name', 'like', '%'.$search.'%');
             }
             $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) {
                 $statusBadge = match ($item->status) {
                     'paid' => '<span class="badge bg-success">Lunas</span>',
                     default => '<span class="badge bg-danger">Belum Lunas</span>',

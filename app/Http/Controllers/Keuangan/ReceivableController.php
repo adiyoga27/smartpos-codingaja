@@ -30,7 +30,9 @@ class ReceivableController extends Controller
                 $query->where('document_number', 'like', '%'.$search.'%');
             }
             $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) {
                 $statusBadge = match ($item->status) {
                     'paid' => '<span class="badge bg-success">Lunas</span>',
                     'overdue' => '<span class="badge bg-danger">Jatuh Tempo</span>',

@@ -32,7 +32,9 @@ class CashTransactionController extends Controller
                 })->orWhere('description', 'like', '%'.$search.'%');
             }
             $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) {
                 $typeBadge = match ($item->type) {
                     'in' => '<span class="badge bg-success">Masuk</span>',
                     'out' => '<span class="badge bg-danger">Keluar</span>',

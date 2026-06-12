@@ -29,7 +29,9 @@ class CashAccountController extends Controller
                 });
             }
             $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) {
                 $typeLabel = $item->type == 'cash' ? '<span class="badge badge-success">Kas</span>' : '<span class="badge badge-info">Bank</span>';
                 $defaultBadge = $item->is_default ? ' <span class="badge badge-primary">Default</span>' : '';
                 $actions = '<a href="'.route('keuangan.cash_accounts.manage', $item).'" class="btn btn-sm btn-info" title="Kelola Akun"><i class="bi bi-gear"></i></a> ';

@@ -33,7 +33,9 @@ class JournalController extends Controller
                     ->orWhere('description', 'like', '%'.$search.'%');
             }
             $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) {
                 return [
                     $item->journal_number,
                     $item->journal_date->format('d/m/Y'),

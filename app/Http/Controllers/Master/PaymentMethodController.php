@@ -25,7 +25,9 @@ class PaymentMethodController extends Controller
                 });
             }
             $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) {
                 $creditBadge = $item->is_credit
                     ? '<span class="badge bg-danger">Kredit</span>'
                     : '<span class="badge bg-info">Tunai</span>';

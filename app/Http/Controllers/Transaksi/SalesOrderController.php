@@ -30,7 +30,9 @@ class SalesOrderController extends Controller
                 $query->where('document_number', 'like', '%'.$search.'%');
             }
             $filtered = $query->count();
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) {
                 $statusBadge = match ($item->status) {
                     'draft' => '<span class="badge bg-secondary">Draft</span>',
                     'sent' => '<span class="badge bg-info">Dikirim</span>',

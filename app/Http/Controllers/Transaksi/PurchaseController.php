@@ -57,7 +57,9 @@ class PurchaseController extends Controller
                 $query->with('items');
             }
 
-            $data = $query->skip($start)->take($length)->get()->map(function ($item) use ($isPO) {
+            $isExport = $length === -1;
+            $rows = $isExport ? $query->get() : $query->skip($start)->take($length)->get();
+            $data = $rows->map(function ($item) use ($isPO) {
                 $isPaid = $item->paid_amount >= $item->total;
                 $statusBadge = $isPaid
                     ? '<span class="badge bg-success">Lunas</span>'
