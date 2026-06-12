@@ -8,87 +8,15 @@
         body { 
             font-family: 'Courier New', Courier, monospace; 
             padding: 20px; 
-            width: 9.5in; 
             font-size: 14px; 
             color: #000; 
             background: #fff;
-            margin: auto;
         }
-        .container {
-            width: 100%;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-        .header-left, .header-right {
-            width: 50%;
-        }
-        .header-right {
-            text-align: right;
-            padding-right: 20px;
-        }
-        .title {
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-bottom: 10px;
-            table-layout: fixed;
-        }
-        thead {
-            border-top: 1px dashed #000;
-            border-bottom: 1px dashed #000;
-        }
-        tbody {
-            border-bottom: 1px dashed #000;
-        }
-        th, td { 
-            padding: 4px 0; 
-            vertical-align: top;
-            font-weight: normal;
-        }
-        th {
-            text-align: left;
-        }
-        .col-no { width: 5%; }
-        .col-name { width: 40%; }
-        .col-qty { width: 12%; }
-        .col-price { width: 15%; text-align: right; }
-        .col-disc { width: 10%; text-align: right; }
-        .col-total { width: 18%; text-align: right; }
-        
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        
-        .footer-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-top: 10px;
-        }
-        .terbilang-box {
-            width: 70%;
-        }
-        .terbilang-text {
-            margin-bottom: 15px;
-        }
-        .total-box {
-            width: 30%;
-            text-align: right;
-        }
-        .signature-area {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 5px;
-        }
-        .signature-box {
-            width: 33%;
-            text-align: center;
+        pre {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px; /* Adjust size if needed so it doesn't wrap on browser view */
+            line-height: 1.2;
+            white-space: pre;
         }
         .btn-print { 
             margin-top: 30px; 
@@ -99,95 +27,121 @@
             border-radius: 4px; 
             cursor: pointer; 
             font-size: 14px; 
-            display: block; 
+            display: inline-block; 
         }
-        @if(!isset($isPdf))
         @media print {
             body { 
-                width: 100%; 
                 padding: 0;
             }
             .btn-print { display: none; }
             @page { 
-                size: 9.5in 11in; 
-                margin: 0.5in; 
+                margin: 0; 
             }
         }
-        @endif
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="header-left">
-                <div>{{ $company->name ?? 'HA()' }}</div>
-                <div>{{ $company->address ?? 'Jl. Tumpang Sari Cakranegara' }}</div>
-                <br>
-                <div>Tanggal : {{ $sale->sale_date->format('d-m-Y') }}</div>
-                <div>Metode  : {{ $sale->paymentMethod?->name ?? '-' }}</div>
+<?php
+    // --- HELPER FUNCTIONS UNTUK FORMATTING TEKS ---
+    function padRight($string, $length) {
+        return str_pad(substr((string)$string, 0, $length), $length, " ", STR_PAD_RIGHT);
+    }
+    
+    function padLeft($string, $length) {
+        return str_pad(substr((string)$string, 0, $length), $length, " ", STR_PAD_LEFT);
+    }
 
-                <div>Kasir   : {{ $sale->creator->name ?? 'KASIR 1' }}</div>
-                <div>No.     : {{ $sale->invoice_number }}</div>
-            </div>
-            <div class="header-right">
-                <div class="title">FAKTUR {{ strtoupper($sale->paymentMethod?->is_credit ? 'PENJUALAN KREDIT' : 'PENJUALAN') }}</div>
-                <br>
-                <div>Kepada Yth.</div>
-                <div>{{ strtoupper($sale->customer?->name ?? $sale->customer_name ?? 'UMUM') }}</div>
-                @if($sale->customer?->city)
-                <div>{{ strtoupper($sale->customer->city) }}</div>
-                @endif
-                @if($sale->paymentMethod?->is_credit && $sale->due_date)
-                <div>Tgl Mulai : {{ $sale->sale_date->format('d-m-Y') }}</div>
-                <div>Tgl Tempo : {{ $sale->due_date->format('d-m-Y') }}</div>
-                @endif
-            </div>
-        </div>
+    function padCenter($string, $length) {
+        return str_pad(substr((string)$string, 0, $length), $length, " ", STR_PAD_BOTH);
+    }
 
-        <table>
-            <thead>
-                <tr>
-                    <th class="col-no">No.</th>
-                    <th class="col-name"><span style="float:left">:</span> Kode/Nama Produk</th>
-                    <th class="col-qty"><span style="float:left">:</span> QTY</th>
-                    <th class="col-price text-right"><span style="float:left">:</span> HARGA</th>
-                    <th class="col-disc text-right"><span style="float:left">:</span> DISKON</th>
-                    <th class="col-total text-right"><span style="float:left">:</span> JUMLAH</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($sale->items as $index => $item)
-                <tr>
-                    <td>{{ $index + 1 }}</td>
-                    <td><span style="float:left">:</span> {{ strtoupper($item->product?->name ?? '-') }}</td>
-                    <td><span style="float:left">:</span> {{ formatQty($item->quantity) }} PCS</td>
-                    <td class="text-right"><span style="float:left">:</span> {{ number_format($item->unit_price, 0, ',', '.') }}</td>
-                    <td class="text-right"><span style="float:left">:</span> {{ $item->discount > 0 ? number_format($item->discount, 0, ',', '.') : '' }}</td>
-                    <td class="text-right"><span style="float:left">:</span> {{ number_format($item->total, 0, ',', '.') }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
+    // --- LEBAR KERTAS (Karakter) ---
+    // Epson LX-310 kertas letter/A4 continous form biasanya 80 karakter (10 cpi)
+    $w = 80; 
 
-        <div class="footer-container">
-            <div class="terbilang-box">
-                <div class="terbilang-text">{{ trim(terbilang($sale->total)) }} rupiah</div>
-                <div>Terima kasih</div>
-                <div>PEMBAYARAN NOTA HARAP DISELESAIKAN PER NOTA SAJA</div>
-                <div class="signature-area">
-                    <div class="signature-box">Penerima,</div>
-                    <div class="signature-box">Gudang,</div>
-                    <div class="signature-box">Hormat Kami,</div>
-                </div>
-            </div>
-            <div class="total-box">
-                Jumlah Rp. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {{ number_format($sale->total, 0, ',', '.') }}
-            </div>
-        </div>
+    // --- MENGUMPULKAN DATA ---
+    $companyName = $company->name ?? 'HA()';
+    $companyAddr = $company->address ?? 'Jl. Tumpang Sari Cakranegara';
+    $fakturTitle = 'FAKTUR ' . strtoupper($sale->paymentMethod?->is_credit ? 'PENJUALAN KREDIT' : 'PENJUALAN');
+    
+    $customerName = strtoupper($sale->customer?->name ?? $sale->customer_name ?? 'UMUM');
+    $customerCity = $sale->customer?->city ? strtoupper($sale->customer->city) : "";
+    $methodName   = $sale->paymentMethod?->name ?? '-';
+    $cashierName  = $sale->creator->name ?? 'KASIR 1';
+    
+    $tglMulai = $sale->paymentMethod?->is_credit && $sale->due_date ? "Tgl Mulai : " . $sale->sale_date->format('d-m-Y') : "";
+    $tglTempo = $sale->paymentMethod?->is_credit && $sale->due_date ? "Tgl Tempo : " . $sale->due_date->format('d-m-Y') : "";
 
+    // --- HEADER ---
+    $output  = "";
+    $output .= padRight($companyName, 45) . padRight($fakturTitle, 35) . "\n";
+    $output .= padRight($companyAddr, 45) . padRight("", 35) . "\n";
+    $output .= padRight("", 45) . padRight("Kepada Yth.", 35) . "\n";
+    
+    $output .= padRight("Tanggal : " . $sale->sale_date->format('d-m-Y'), 45) . padRight($customerName, 35) . "\n";
+    $output .= padRight("Metode  : " . $methodName, 45) . padRight($customerCity, 35) . "\n";
+    
+    $output .= padRight("Kasir   : " . $cashierName, 45) . padRight($tglMulai, 35) . "\n";
+    $output .= padRight("No.     : " . $sale->invoice_number, 45) . padRight($tglTempo, 35) . "\n";
+    
+    $output .= "\n";
+    
+    // --- TABEL BARANG ---
+    // Kolom: No(4) Nama(32) QTY(10) HARGA(10) DISKON(10) JUMLAH(14)
+    $separator = str_repeat("-", $w) . "\n";
+    $output .= $separator;
+    $output .= padRight("No.", 4) . padRight("Kode/Nama Produk", 31) . padRight("QTY", 11) . padLeft("HARGA", 10) . padLeft("DISKON", 10) . padLeft("JUMLAH", 14) . "\n";
+    $output .= $separator;
+
+    foreach($sale->items as $index => $item) {
+        $no = $index + 1;
+        $nama = strtoupper($item->product?->name ?? '-');
+        
+        // Memotong nama jika lebih dari 30 karakter agar tidak merusak spasi
+        if(strlen($nama) > 30) {
+            $nama = substr($nama, 0, 30); 
+        }
+        
+        $qty = formatQty($item->quantity) . " PCS";
+        $harga = number_format($item->unit_price, 0, ',', '.');
+        $diskon = $item->discount > 0 ? number_format($item->discount, 0, ',', '.') : '';
+        $jumlah = number_format($item->total, 0, ',', '.');
+
+        $output .= padRight($no, 4) . padRight($nama, 31) . padRight($qty, 11) . padLeft($harga, 10) . padLeft($diskon, 10) . padLeft($jumlah, 14) . "\n";
+    }
+    
+    $output .= $separator;
+
+    // --- FOOTER & TOTAL ---
+    $terbilangText = trim(terbilang($sale->total)) . " rupiah";
+    $totalText = number_format($sale->total, 0, ',', '.');
+    
+    // Jika terbilang sangat panjang, potong jadi 2 baris (opsional, tapi diasumsikan muat 50 karakter)
+    $output .= padRight($terbilangText, 55) . padLeft("Jumlah Rp. " . padLeft($totalText, 14), 25) . "\n";
+    $output .= "\n";
+    
+    $output .= "Terima kasih\n";
+    $output .= "PEMBAYARAN NOTA HARAP DISELESAIKAN PER NOTA SAJA\n";
+    $output .= "\n";
+    
+    $output .= padCenter("Penerima,", 26) . padCenter("Gudang,", 26) . padCenter("Hormat Kami,", 28) . "\n";
+    $output .= "\n\n\n";
+    $output .= padCenter("(............)", 26) . padCenter("(............)", 26) . padCenter("(............)", 28) . "\n";
+?>
+    <div>
         @if(!isset($isPdf) && !request()->has('preview'))
-        <button class="btn-print" onclick="window.print()">Cetak</button>
+        <button class="btn-print no-print" onclick="window.print()">Cetak (Raw)</button>
+        <br><br>
         @endif
+        
+        <pre>{{ $output }}</pre>
     </div>
+
+    <script>
+        // Opsional: otomatis print jika tidak dalam mode preview
+        @if(!isset($isPdf) && !request()->has('preview'))
+            // window.onload = function() { window.print(); }
+        @endif
+    </script>
 </body>
 </html>
