@@ -280,14 +280,14 @@ class SaleController extends Controller
 
                 $actions = '';
                 if (auth()->user()->can('view_sale')) {
-                    $actions .= '<div class="flex gap-1">'
-                        .'<a href="'.route('pos.print-epson', $item).'" target="_blank" class="btn btn-sm btn-outline-dark" title="Cetak"><i class="bi bi-printer-fill"></i></a>'
-                        .'<a href="'.route('pos.detail', $item).'" target="_blank" class="btn btn-sm btn-outline-info" title="Detail"><i class="bi bi-eye"></i></a>';
+                    $actions .= '<div class="flex gap-1.5 items-center justify-center">'
+                        .'<button type="button" onclick="printReceipt(\''.route('pos.print-epson', $item).'\')" class="bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-800 px-2.5 py-1.5 rounded-lg shadow-sm transition-all" title="Cetak"><i class="bi bi-printer-fill"></i></button>'
+                        .'<a href="'.route('pos.detail', $item).'" class="bg-info-50 text-info-600 hover:bg-info-100 hover:text-info-700 px-2.5 py-1.5 rounded-lg shadow-sm transition-all" title="Detail"><i class="bi bi-eye"></i></a>';
                     if (auth()->user()->can('edit_sale')) {
-                        $actions .= '<a href="'.route('pos.edit', $item).'" class="btn btn-sm btn-outline-warning" title="Edit"><i class="bi bi-pencil"></i></a>';
+                        $actions .= '<a href="'.route('pos.edit', $item).'" class="bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 px-2.5 py-1.5 rounded-lg shadow-sm transition-all" title="Edit"><i class="bi bi-pencil"></i></a>';
                     }
                     if (auth()->user()->can('delete_sale')) {
-                        $actions .= '<button type="button" class="btn btn-sm btn-outline-danger btn-delete-sale" data-id="'.$item->id.'" data-invoice="'.$item->invoice_number.'" title="Hapus"><i class="bi bi-trash"></i></button>';
+                        $actions .= '<button type="button" class="bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 px-2.5 py-1.5 rounded-lg shadow-sm transition-all btn-delete-sale" data-id="'.$item->id.'" data-invoice="'.$item->invoice_number.'" title="Hapus"><i class="bi bi-trash"></i></button>';
                     }
                     $actions .= '</div>';
                 }

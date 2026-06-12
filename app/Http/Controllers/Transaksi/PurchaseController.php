@@ -31,6 +31,16 @@ class PurchaseController extends Controller
                 $query->where('document_number', 'not like', '%-DIRECT-%');
             }
 
+            if ($request->filled('from')) {
+                $query->whereDate('purchase_date', '>=', $request->from);
+            }
+            if ($request->filled('to')) {
+                $query->whereDate('purchase_date', '<=', $request->to);
+            }
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
             $draw = (int) $request->input('draw', 1);
             $start = (int) $request->input('start', 0);
             $length = (int) $request->input('length', 25);
@@ -63,25 +73,27 @@ class PurchaseController extends Controller
                     $receivedQty = $item->items->sum('received_quantity');
                     $allReceived = $receivedQty >= $totalQty;
 
-                    $actions = '<div class="flex gap-1">';
+                    $actions = '<div class="flex gap-1.5 items-center justify-center">';
                     if (! $isPaid) {
-                        $actions .= '<a href="'.$payUrl.'" class="btn btn-sm btn-success" title="Bayar"><i class="bi bi-cash-coin"></i></a>';
+                        $actions .= '<a href="'.$payUrl.'" class="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 px-2.5 py-1.5 rounded-lg shadow-sm transition-all" title="Bayar"><i class="bi bi-cash-coin"></i></a>';
                     }
                     if (! $allReceived) {
-                        $actions .= '<a href="'.$receiveUrl.'" class="btn btn-sm btn-primary" title="Terima Barang"><i class="bi bi-box-arrow-in-down"></i></a>';
+                        $actions .= '<a href="'.$receiveUrl.'" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 px-2.5 py-1.5 rounded-lg shadow-sm transition-all" title="Terima Barang"><i class="bi bi-box-arrow-in-down"></i></a>';
                     }
-                    $actions .= '<a href="'.$detailUrl.'" class="btn btn-sm btn-info" title="Detail"><i class="bi bi-eye"></i></a>';
-                    $actions .= '<a href="'.$printUrl.'" target="_blank" class="btn btn-sm btn-warning" title="Print"><i class="bi bi-printer"></i></a>';
+                    $actions .= '<a href="'.$detailUrl.'" class="bg-info-50 text-info-600 hover:bg-info-100 hover:text-info-700 px-2.5 py-1.5 rounded-lg shadow-sm transition-all" title="Detail"><i class="bi bi-eye"></i></a>';
+                    $actions .= '<button type="button" onclick="printReceipt(\''.$printUrl.'\')" class="bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-800 px-2.5 py-1.5 rounded-lg shadow-sm transition-all" title="Print"><i class="bi bi-printer-fill"></i></button>';
                     if (! $isPaid && $item->status !== 'cancelled') {
-                        $actions .= '<form action="'.route('transaksi.purchases.destroy', $item).'" method="POST" class="d-inline" onsubmit="return confirm(\'Hapus PO ini?\')">'.csrf_field().method_field('DELETE').'<button class="btn btn-sm btn-danger" title="Hapus"><i class="bi bi-trash"></i></button></form>';
+                        $actions .= '<form action="'.route('transaksi.purchases.destroy', $item).'" method="POST" class="d-inline" onsubmit="return confirm(\'Hapus PO ini?\')">'.csrf_field().method_field('DELETE').'<button type="submit" class="bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 px-2.5 py-1.5 rounded-lg shadow-sm transition-all" title="Hapus"><i class="bi bi-trash"></i></button></form>';
                     }
                     $actions .= '</div>';
                 } else {
-                    $actions = '<a href="'.$detailUrl.'" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>'
-                        .'<a href="'.$printUrl.'" target="_blank" class="btn btn-sm btn-warning"><i class="bi bi-printer"></i></a>';
+                    $actions = '<div class="flex gap-1.5 items-center justify-center">'
+                        .'<a href="'.$detailUrl.'" class="bg-info-50 text-info-600 hover:bg-info-100 hover:text-info-700 px-2.5 py-1.5 rounded-lg shadow-sm transition-all" title="Detail"><i class="bi bi-eye"></i></a>'
+                        .'<button type="button" onclick="printReceipt(\''.$printUrl.'\')" class="bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-800 px-2.5 py-1.5 rounded-lg shadow-sm transition-all" title="Print"><i class="bi bi-printer-fill"></i></button>';
                     if (! $isPaid && $item->status !== 'cancelled') {
-                        $actions .= '<form action="'.route('transaksi.purchases.destroy', $item).'" method="POST" class="d-inline" onsubmit="return confirm(\'Hapus data ini?\')">'.csrf_field().method_field('DELETE').'<button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button></form>';
+                        $actions .= '<form action="'.route('transaksi.purchases.destroy', $item).'" method="POST" class="d-inline" onsubmit="return confirm(\'Hapus data ini?\')">'.csrf_field().method_field('DELETE').'<button type="submit" class="bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 px-2.5 py-1.5 rounded-lg shadow-sm transition-all" title="Hapus"><i class="bi bi-trash"></i></button></form>';
                     }
+                    $actions .= '</div>';
                 }
 
                 $row = [

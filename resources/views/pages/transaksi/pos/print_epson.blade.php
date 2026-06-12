@@ -140,22 +140,22 @@
             <thead>
                 <tr>
                     <th class="col-no">No.</th>
-                    <th class="col-name">: Kode/Nama Produk</th>
-                    <th class="col-qty">: QTY</th>
-                    <th class="col-price">: HARGA</th>
-                    <th class="col-disc">: DISKON</th>
-                    <th class="col-total">: JUMLAH</th>
+                    <th class="col-name"><span style="float:left">:</span> Kode/Nama Produk</th>
+                    <th class="col-qty"><span style="float:left">:</span> QTY</th>
+                    <th class="col-price text-right"><span style="float:left">:</span> HARGA</th>
+                    <th class="col-disc text-right"><span style="float:left">:</span> DISKON</th>
+                    <th class="col-total text-right"><span style="float:left">:</span> JUMLAH</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($sale->items as $index => $item)
                 <tr>
                     <td>{{ $index + 1 }}</td>
-                    <td>: {{ strtoupper($item->product?->name ?? '-') }}</td>
-                    <td>: {{ formatQty($item->quantity) }} PCS</td>
-                    <td class="text-right">: &nbsp;&nbsp;&nbsp;{{ number_format($item->unit_price, 0, ',', '.') }}</td>
-                    <td class="text-right">: &nbsp;&nbsp;&nbsp;{{ $item->discount > 0 ? number_format($item->discount, 0, ',', '.') : '' }}</td>
-                    <td class="text-right">: &nbsp;&nbsp;&nbsp;{{ number_format($item->total, 0, ',', '.') }}</td>
+                    <td><span style="float:left">:</span> {{ strtoupper($item->product?->name ?? '-') }}</td>
+                    <td><span style="float:left">:</span> {{ formatQty($item->quantity) }} PCS</td>
+                    <td class="text-right"><span style="float:left">:</span> {{ number_format($item->unit_price, 0, ',', '.') }}</td>
+                    <td class="text-right"><span style="float:left">:</span> {{ $item->discount > 0 ? number_format($item->discount, 0, ',', '.') : '' }}</td>
+                    <td class="text-right"><span style="float:left">:</span> {{ number_format($item->total, 0, ',', '.') }}</td>
                 </tr>
                 @endforeach
             </tbody>
