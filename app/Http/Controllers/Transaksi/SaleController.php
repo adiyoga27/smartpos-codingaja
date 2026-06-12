@@ -105,7 +105,7 @@ class SaleController extends Controller
             }
             $totalDiscount = $validated['total_discount'] ?? 0;
             $total = max(0, $subtotal + $tax - $totalDiscount);
-            $paidAmount = $validated['paid_amount'] ?? $total;
+            $paidAmount = $isCredit ? 0 : ($validated['paid_amount'] ?? $total);
             $change = max(0, $paidAmount - $total);
 
             $status = $isCredit ? 'unpaid' : (($paidAmount >= $total) ? 'paid' : 'partial');

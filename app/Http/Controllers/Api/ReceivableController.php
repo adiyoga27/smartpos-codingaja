@@ -59,8 +59,17 @@ class ReceivableController extends ApiController
 
             $receivable->paid_amount += $validated['amount'];
             $receivable->remaining_amount = max(0, $receivable->amount - $receivable->paid_amount);
-            $receivable->status = $receivable->remaining_amount <= 0 ? 'paid' : 'partial';
+            $receivable->status = $receivable->remaining_amount <= 0 ? 'paid' : 'open';
             $receivable->save();
+
+            if ($receivable->sale_id) {
+                $sale = $receivable->sale;
+                $totalPaid = $sale->receivables()->sum('paid_amount');
+                $sale->update([
+                    'status' => $sale->total <= $totalPaid ? 'paid' : 'unpaid',
+                    'paid_amount' => $totalPaid,
+                ]);
+            }
 
             $cashAccount = CashAccount::find($validated['cash_account_id']);
             $cashAccount->current_balance += $validated['amount'];

@@ -32,10 +32,9 @@ class ReceivableController extends Controller
             $filtered = $query->count();
             $data = $query->skip($start)->take($length)->get()->map(function ($item) {
                 $statusBadge = match ($item->status) {
-                    'open' => '<span class="badge bg-secondary">Belum</span>',
-                    'partial' => '<span class="badge bg-warning">Sebagian</span>',
                     'paid' => '<span class="badge bg-success">Lunas</span>',
-                    default => '<span class="badge bg-danger">Jatuh Tempo</span>',
+                    'overdue' => '<span class="badge bg-danger">Jatuh Tempo</span>',
+                    default => '<span class="badge bg-secondary">Belum Lunas</span>',
                 };
                 $actions = '';
                 if ($item->remaining_amount > 0) {
@@ -89,8 +88,17 @@ class ReceivableController extends Controller
             ]);
             $receivable->paid_amount += $validated['amount'];
             $receivable->remaining_amount = max(0, $receivable->amount - $receivable->paid_amount);
-            $receivable->status = $receivable->remaining_amount <= 0 ? 'paid' : 'partial';
+            $receivable->status = $receivable->remaining_amount <= 0 ? 'paid' : 'open';
             $receivable->save();
+
+            if ($receivable->sale_id) {
+                $sale = $receivable->sale;
+                $totalPaid = $sale->receivables()->sum('paid_amount');
+                $sale->update([
+                    'status' => $sale->total <= $totalPaid ? 'paid' : 'unpaid',
+                    'paid_amount' => $totalPaid,
+                ]);
+            }
 
             $cash = CashAccount::find($validated['cash_account_id']);
             $cash->current_balance += $validated['amount'];
