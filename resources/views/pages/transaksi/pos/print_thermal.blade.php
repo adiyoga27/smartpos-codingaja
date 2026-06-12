@@ -68,6 +68,8 @@
     @endif
     <p class="center" style="font-size:10px;">{{ now()->format('d/m/Y H:i:s') }}</p>
 
+    @if(!request()->has('preview'))
     <button class="btn-print" onclick="window.print()">Cetak</button>
+    @endif
 </body>
 </html>

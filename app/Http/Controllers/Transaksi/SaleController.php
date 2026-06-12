@@ -18,6 +18,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockMutation;
 use App\Models\Tax;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -124,6 +125,7 @@ class SaleController extends Controller
                 'customer_id' => $validated['customer_id'] ?? null,
                 'customer_name' => $customerName,
                 'sale_date' => $validated['sale_date'],
+                'due_date' => $validated['due_date'] ?? null,
                 'payment_method_id' => $validated['payment_method_id'],
                 'tax_id' => $validated['tax_id'] ?? null,
                 'tax_amount' => $tax,
@@ -246,6 +248,18 @@ class SaleController extends Controller
         $company = CompanySetting::first();
 
         return view('pages.transaksi.pos.print_epson', compact('sale', 'company'));
+    }
+
+    public function downloadPdf(Sale $sale)
+    {
+        $sale->load(['items.product', 'paymentMethod', 'customer', 'creator']);
+        $company = CompanySetting::first();
+        $isPdf = true;
+
+        $pdf = Pdf::loadView('pages.transaksi.pos.print_epson', compact('sale', 'company', 'isPdf'))
+            ->setPaper('A4', 'landscape');
+
+        return $pdf->download('Invoice-'.$sale->invoice_number.'.pdf');
     }
 
     public function riwayat(Request $request)

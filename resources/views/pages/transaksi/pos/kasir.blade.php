@@ -205,6 +205,35 @@
             </div>
         </div>
     </div>
+
+    <!-- Print Preview Modal -->
+    <div x-show="printPreviewModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" @keydown.escape.window="printPreviewModal=false">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden mx-4">
+            <div class="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-4 text-white flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2">
+                    <i class="bi bi-printer text-lg"></i>
+                    <span class="font-bold">Pratinjau Cetak</span>
+                </div>
+                <button @click="printPreviewModal=false" class="text-white/80 hover:text-white"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="flex-1 min-h-0 overflow-hidden bg-slate-200 flex justify-center" id="printPreviewContainer">
+                <iframe :src="printPreviewUrl" class="border-0 bg-white h-full" id="printPreviewFrame"
+                        @load="scalePrintPreview()"
+                        style="transform-origin: top center;"></iframe>
+            </div>
+            <div class="flex gap-3 justify-end p-4 border-t border-slate-100 bg-slate-50 shrink-0">
+                <button type="button" @click="printPreviewModal=false" class="btn btn-light rounded-xl px-5 py-2.5 font-medium shadow-sm hover:bg-slate-100 transition-all">
+                    <i class="bi bi-x-lg mr-1"></i> Tutup
+                </button>
+                <button type="button" @click="viewPrintPreview()" class="btn btn-outline-primary rounded-xl px-5 py-2.5 font-medium shadow-sm hover:bg-primary-50 transition-all">
+                    <i class="bi bi-eye mr-1"></i> Lihat
+                </button>
+                <button type="button" @click="doPrintPreview()" class="btn btn-primary bg-gradient-to-r from-primary-600 to-primary-500 rounded-xl px-6 py-2.5 shadow-lg shadow-primary-500/30 hover:-translate-y-0.5 transition-all border-0 flex items-center gap-2 font-bold">
+                    <i class="bi bi-printer-fill"></i> Cetak
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 @push('scripts')
 @php
@@ -249,6 +278,9 @@ function posKasir() {
         allCustomers: {!! $customersJson !!},
         allProducts: {!! $productsJson !!},
         filteredCount: {{ $products->count() }},
+        printPreviewModal: false,
+        printPreviewUrl: '',
+        printPreviewSaleId: null,
 
         init() {
             this.renderCart();
@@ -370,7 +402,7 @@ function posKasir() {
         getComputedDueDate() {
             let weeks = parseInt(this.creditTerm);
             if (!weeks || weeks < 1) return '';
-            let d = new Date();
+            let d = new Date(this.creditStartDate);
             d.setDate(d.getDate() + weeks * 7);
             return d.toISOString().split('T')[0];
         },
@@ -570,20 +602,15 @@ function posKasir() {
                     if (data.sale_id && self.printerType !== 'none') {
                         let printUrl;
                         if (self.printerType === 'thermal') {
-                            printUrl = '{{ url('pos/print-thermal') }}/' + data.sale_id;
+                            printUrl = '{{ url('pos/print-thermal') }}/' + data.sale_id + '?preview=1';
                         } else if (self.printerType === 'epson') {
-                            printUrl = '{{ url('pos/print-epson') }}/' + data.sale_id;
+                            printUrl = '{{ url('pos/print-epson') }}/' + data.sale_id + '?preview=1';
                         } else {
-                            printUrl = '{{ url('pos/print-a4') }}/' + data.sale_id;
+                            printUrl = '{{ url('pos/print-a4') }}/' + data.sale_id + '?preview=1';
                         }
-                        setTimeout(() => {
-                            let iframe = document.createElement('iframe');
-                            iframe.style.display = 'none';
-                            iframe.src = printUrl;
-                            iframe.onload = function() { this.contentWindow.print(); };
-                            document.body.appendChild(iframe);
-                            setTimeout(() => document.body.removeChild(iframe), 60000);
-                        }, 300);
+                        self.printPreviewUrl = printUrl;
+                        self.printPreviewSaleId = data.sale_id;
+                        self.printPreviewModal = true;
                     }
                 } else {
                     showToast(data.message || Object.values(data.errors || {}).flat().join('<br>') || 'Gagal', 'error');
@@ -591,6 +618,46 @@ function posKasir() {
             })
             .catch(() => showToast('Gagal memproses transaksi', 'error'))
             .finally(() => { self.loading = false; });
+        },
+
+        scalePrintPreview() {
+            let frame = document.getElementById('printPreviewFrame');
+            if (!frame) return;
+            try {
+                let doc = frame.contentDocument || frame.contentWindow.document;
+                let body = doc.body;
+                let container = document.getElementById('printPreviewContainer');
+                if (!container) return;
+                let cw = container.clientWidth;
+                let bw = body.scrollWidth || cw;
+                if (bw > cw) {
+                    let scale = cw / bw;
+                    frame.style.transform = 'scale(' + scale + ')';
+                    frame.style.width = bw + 'px';
+                    frame.style.height = (body.scrollHeight * scale) + 'px';
+                } else {
+                    frame.style.width = '100%';
+                    frame.style.height = '100%';
+                }
+            } catch (e) {}
+        },
+
+        doPrintPreview() {
+            let frame = document.getElementById('printPreviewFrame');
+            if (frame) {
+                frame.contentWindow.focus();
+                frame.contentWindow.print();
+            }
+        },
+
+        viewPrintPreview() {
+            window.open(this.printPreviewUrl, '_blank');
+        },
+
+        savePrintPreview() {
+            if (this.printPreviewSaleId) {
+                window.location.href = '{{ url('pos/download-pdf') }}/' + this.printPreviewSaleId;
+            }
         },
 
         saveCustomer() {

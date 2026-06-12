@@ -24,10 +24,12 @@
         .totals .row.total { border-top: 2px solid #1a1a1a; padding-top: 8px; margin-top: 5px; font-size: 16px; font-weight: bold; }
         .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 15px; }
         .note { font-size: 12px; color: #888; margin-top: 10px; }
+        @if(!isset($isPdf))
         @media print {
             body { padding: 10px; }
             @page { size: A4; margin: 10mm; }
         }
+        @endif
     </style>
 </head>
 <body>
@@ -104,7 +106,9 @@
 
     <div class="footer">
         <p>Terima kasih telah berbelanja &mdash; {{ $company->name ?? config('app.name') }}</p>
+        @if(!isset($isPdf) && !request()->has('preview'))
         <button onclick="window.print()" style="margin-top:10px;padding:8px 20px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;">Cetak</button>
+        @endif
     </div>
 </body>
 </html>

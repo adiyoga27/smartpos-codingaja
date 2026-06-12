@@ -101,6 +101,7 @@
             font-size: 14px; 
             display: block; 
         }
+        @if(!isset($isPdf))
         @media print {
             body { 
                 width: 100%; 
@@ -112,6 +113,7 @@
                 margin: 0.5in; 
             }
         }
+        @endif
     </style>
 </head>
 <body>
@@ -137,7 +139,7 @@
                 @endif
                 @if($sale->paymentMethod?->is_credit && $sale->due_date)
                 <div>Tgl Mulai : {{ $sale->sale_date->format('d-m-Y') }}</div>
-                <div>Tgl Tempo : {{ \Carbon\Carbon::parse($sale->due_date)->format('d-m-Y') }}</div>
+                <div>Tgl Tempo : {{ $sale->due_date->format('d-m-Y') }}</div>
                 @endif
             </div>
         </div>
@@ -183,7 +185,9 @@
             </div>
         </div>
 
+        @if(!isset($isPdf) && !request()->has('preview'))
         <button class="btn-print" onclick="window.print()">Cetak</button>
+        @endif
     </div>
 </body>
 </html>
