@@ -20,12 +20,14 @@
             <i class="bi bi-calendar3"></i> {{ $sale->sale_date->isoFormat('dddd, D MMMM Y - HH:mm') }}
         </p>
     </div>
-    <div class="flex gap-2 w-full sm:w-auto">
-        <a href="{{ route('pos.print-epson', $sale) }}" target="_blank" class="w-full sm:w-auto btn bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white border-0 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
-            <i class="bi bi-printer"></i> Cetak Struk
+    <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mt-3 sm:mt-0">
+        <a href="{{ route('pos.print-epson', $sale) }}" target="_blank" class="group w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-xl shadow-[0_4px_12px_rgba(79,70,229,0.2)] hover:shadow-[0_6px_16px_rgba(79,70,229,0.3)] hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2">
+            <i class="bi bi-printer text-lg group-hover:scale-110 transition-transform"></i> 
+            <span>Cetak Struk</span>
         </a>
-        <a href="{{ route('pos.riwayat') }}" class="w-full sm:w-auto btn bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 shadow-sm transition-all flex items-center justify-center gap-2">
-            <i class="bi bi-arrow-left"></i> Kembali
+        <a href="{{ route('pos.riwayat') }}" class="w-full sm:w-auto px-6 py-2.5 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 font-medium rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2">
+            <i class="bi bi-arrow-left text-lg"></i> 
+            <span>Kembali</span>
         </a>
     </div>
 </div>
