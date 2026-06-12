@@ -121,7 +121,7 @@
                 <div>{{ $company->name ?? 'HA()' }}</div>
                 <div>{{ $company->address ?? 'Jl. Tumpang Sari Cakranegara' }}</div>
                 <br>
-                <div>Tanggal : {{ $sale->sale_date->format('d-m-Y') }}, Tgl Tempo : {{ $sale->due_date ? \Carbon\Carbon::parse($sale->due_date)->format('d-m-Y') : $sale->sale_date->format('d-m-Y') }}</div>
+                <div>Tanggal : {{ $sale->sale_date->format('d-m-Y') }}@if($sale->paymentMethod?->is_credit && $sale->due_date), Tgl Tempo : {{ \Carbon\Carbon::parse($sale->due_date)->format('d-m-Y') }}@endif</div>
                 <div>Kasir   : {{ $sale->creator->name ?? 'KASIR 1' }}</div>
                 <div>No.     : {{ $sale->invoice_number }}</div>
             </div>

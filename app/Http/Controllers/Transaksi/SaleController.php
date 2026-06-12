@@ -427,6 +427,7 @@ class SaleController extends Controller
         $validated = $request->validate([
             'status' => 'required|in:paid,partial,unpaid,cancelled',
             'due_date' => 'nullable|date',
+            'sale_date' => 'nullable|date',
             'items' => 'required|array|min:1',
             'items.*.id' => 'required|exists:sale_items,id',
             'items.*.quantity' => 'required|numeric|min:0.01',
@@ -519,6 +520,7 @@ class SaleController extends Controller
                 'tax' => $tax,
                 'total' => $total,
                 'due_date' => $validated['due_date'] ?? $sale->due_date,
+                'sale_date' => $validated['sale_date'] ?? $sale->sale_date,
             ]);
 
             // 8. Update receivable if exists

@@ -48,8 +48,13 @@
                     </select>
                 </div>
                 @if($isCredit)
-                <div><label class="form-label">Jatuh Tempo</label>
-                    <input type="date" name="due_date" class="form-input" value="{{ $dueDate }}">
+                <div class="grid grid-cols-2 gap-2">
+                    <div><label class="form-label">Tgl Mulai</label>
+                        <input type="date" name="sale_date" class="form-input" value="{{ $sale->sale_date->format('Y-m-d') }}">
+                    </div>
+                    <div><label class="form-label">Tgl Jatuh Tempo</label>
+                        <input type="date" name="due_date" class="form-input" value="{{ $dueDate }}">
+                    </div>
                 </div>
                 @endif
             </div>

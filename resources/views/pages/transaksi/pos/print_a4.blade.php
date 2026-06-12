@@ -47,6 +47,9 @@
         <div>
             <strong>Customer:</strong> {{ $sale->customer?->name ?? $sale->customer_name ?? 'Walk-in' }}<br>
             <strong>Tanggal:</strong> {{ $sale->sale_date->isoFormat('dddd, D MMMM Y') }}<br>
+            @if($sale->paymentMethod?->is_credit && $sale->due_date)
+            <strong>Jatuh Tempo:</strong> {{ $sale->sale_date->format('d/m/Y') }} &mdash; {{ \Carbon\Carbon::parse($sale->due_date)->format('d/m/Y') }}<br>
+            @endif
             <strong>Metode:</strong> {{ $sale->paymentMethod?->name ?? '-' }}
         </div>
         <div>
