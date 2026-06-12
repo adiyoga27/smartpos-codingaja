@@ -13,8 +13,8 @@ class TelegramErrorReporter
 
     public function __construct()
     {
-        $this->botToken = env('TELEGRAM_BOT_TOKEN', '');
-        $this->chatId = env('TELEGRAM_CHAT_ID', '');
+        $this->botToken = config('telegram.error_reporter.bot_token', '');
+        $this->chatId = config('telegram.error_reporter.chat_id', '');
     }
 
     public function report(Throwable $e): void
