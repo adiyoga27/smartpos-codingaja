@@ -47,6 +47,11 @@
                         <option value="cancelled">Batal</option>
                     </select>
                 </div>
+                @if($isCredit)
+                <div><label class="form-label">Jatuh Tempo</label>
+                    <input type="date" name="due_date" class="form-input" value="{{ $dueDate }}">
+                </div>
+                @endif
             </div>
         </div>
         <div class="card">

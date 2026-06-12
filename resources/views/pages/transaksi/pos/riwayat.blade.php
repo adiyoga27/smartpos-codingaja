@@ -154,6 +154,10 @@ function printReceipt(url) {
         iframe.style.display = 'none';
         document.body.appendChild(iframe);
     }
+    iframe.onload = function() {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+    };
     iframe.src = url;
 }
 </script>

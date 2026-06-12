@@ -360,7 +360,14 @@ class SaleController extends Controller
         $paymentMethods = PaymentMethod::active()->where('is_available_pos', true)->get();
         $taxes = Tax::active()->get();
 
-        return view('pages.transaksi.pos.edit', compact('sale', 'paymentMethods', 'taxes'));
+        $isCredit = $sale->paymentMethod && $sale->paymentMethod->is_credit;
+        $dueDate = null;
+        if ($isCredit) {
+            $receivable = Receivable::where('sale_id', $sale->id)->first();
+            $dueDate = $receivable?->due_date?->format('Y-m-d') ?? $sale->due_date?->format('Y-m-d');
+        }
+
+        return view('pages.transaksi.pos.edit', compact('sale', 'paymentMethods', 'taxes', 'isCredit', 'dueDate'));
     }
 
     public function recentSales()
@@ -419,6 +426,7 @@ class SaleController extends Controller
 
         $validated = $request->validate([
             'status' => 'required|in:paid,partial,unpaid,cancelled',
+            'due_date' => 'nullable|date',
             'items' => 'required|array|min:1',
             'items.*.id' => 'required|exists:sale_items,id',
             'items.*.quantity' => 'required|numeric|min:0.01',
@@ -510,6 +518,7 @@ class SaleController extends Controller
                 'item_discount' => $itemDiscount,
                 'tax' => $tax,
                 'total' => $total,
+                'due_date' => $validated['due_date'] ?? $sale->due_date,
             ]);
 
             // 8. Update receivable if exists
@@ -518,6 +527,7 @@ class SaleController extends Controller
                 $receivable->update([
                     'amount' => $total,
                     'remaining_amount' => max(0, $total - $receivable->paid_amount),
+                    'due_date' => $validated['due_date'] ?? $receivable->due_date,
                 ]);
             }
 
