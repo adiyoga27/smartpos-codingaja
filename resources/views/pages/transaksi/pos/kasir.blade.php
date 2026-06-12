@@ -268,8 +268,12 @@ function posKasir() {
                         accountPanel.style.display = isTransfer ? '' : 'none';
                         if (!isTransfer) {
                             let cashSelect = accountPanel.querySelector('select[name="cash_account_id"]');
-                            let defaultOpt = cashSelect ? cashSelect.querySelector('option[selected]') : null;
-                            if (cashSelect && defaultOpt) cashSelect.value = defaultOpt.value;
+                            if (cashSelect) {
+                                let targetOpt = code === 'CASH'
+                                    ? Array.from(cashSelect.options).find(o => o.text.toLowerCase().includes('tunai'))
+                                    : cashSelect.querySelector('option[selected]');
+                                if (targetOpt) cashSelect.value = targetOpt.value;
+                            }
                         }
                     }
                     if (tempoPanel) tempoPanel.style.display = isCredit ? '' : 'none';
