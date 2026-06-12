@@ -639,7 +639,7 @@ function posKasir() {
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="font-bold text-sm">${s.total}</span>
-                                <span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium ${s.status === 'paid' ? 'bg-emerald-50 text-emerald-600' : s.status === 'partial' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}">${s.status === 'paid' ? 'Lunas' : s.status === 'partial' ? 'Sebagian' : 'Belum'}</span>
+                                <span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium ${s.status === 'paid' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}">${s.status === 'paid' ? 'Lunas' : 'Belum'}</span>
                                 <button type="button" onclick="printHistoryReceipt('${s.print_epson}', '${s.print_thermal}', '${s.print_a4}')" class="btn btn-sm p-1 w-7 h-7 flex items-center justify-center" title="Cetak"><i class="bi bi-printer text-xs"></i></button>
                             </div>
                         </div>
