@@ -61,15 +61,25 @@
         </div>
         <div class="card">
             <div class="card-header">Keuangan</div>
-            <div class="card-body">
-                <dl class="space-y-2">
-                    <div class="flex justify-between"><dt class="text-xs text-slate-400">Subtotal</dt><dd class="text-sm" x-text="formatRp(subtotal())"></dd></div>
-                    <div class="flex justify-between"><dt class="text-xs text-slate-400">Diskon</dt><dd class="text-sm text-red-500" x-text="formatRp(discountTotal())"></dd></div>
-                    <div class="flex justify-between"><dt class="text-xs text-slate-400">Pajak</dt><dd class="text-sm">{{ formatRupiah($sale->tax) }}</dd></div>
-                    <div class="flex justify-between font-bold border-t pt-2"><dt class="text-xs">Total</dt><dd class="text-primary-700" x-text="formatRp(grandTotal())"></dd></div>
-                    <div class="flex justify-between"><dt class="text-xs text-slate-400">Dibayar</dt><dd class="text-sm text-emerald-600">{{ formatRupiah($sale->paid_amount) }}</dd></div>
-                    <div class="flex justify-between"><dt class="text-xs text-slate-400">Kembalian</dt><dd class="text-sm">{{ formatRupiah($sale->change_amount) }}</dd></div>
-                </dl>
+            <div class="card-body space-y-3">
+                <div class="space-y-1">
+                    <div class="flex justify-between"><span class="text-xs text-slate-400">Subtotal</span><span class="text-sm" x-text="formatRp(subtotal())"></span></div>
+                    <div class="flex justify-between"><span class="text-xs text-slate-400">Diskon Item</span><span class="text-sm text-red-500" x-text="formatRp(discountTotal())"></span></div>
+                    <div class="flex justify-between"><span class="text-xs text-slate-400">Pajak</span><span class="text-sm">{{ formatRupiah($sale->tax) }}</span></div>
+                    <div class="flex justify-between"><span class="text-xs text-slate-400">Diskon Tambahan</span><span class="text-sm text-red-500" x-text="formatRp(additionalDiscount)"></span></div>
+                    <div class="flex justify-between font-bold border-t pt-2"><span class="text-xs">Total</span><span class="text-primary-700" x-text="formatRp(grandTotal())"></span></div>
+                </div>
+                <div>
+                    <label class="form-label">Diskon Tambahan</label>
+                    <input type="text" x-model="additionalDiscountDisplay" class="form-input form-input-sm text-right input-rupiah"
+                           @input="additionalDiscount = parseRupiah($event.target.value); formatRupiahInput($event.target)">
+                </div>
+                <div>
+                    <label class="form-label">Jumlah Dibayar</label>
+                    <input type="text" x-model="paidAmountDisplay" class="form-input form-input-sm text-right input-rupiah"
+                           @input="paidAmount = parseRupiah($event.target.value); formatRupiahInput($event.target)">
+                </div>
+                <div class="flex justify-between"><span class="text-xs text-slate-400">Kembalian</span><span class="text-sm text-emerald-600" x-text="formatRp(changeAmount())"></span></div>
             </div>
         </div>
     </div>
@@ -130,6 +140,17 @@ document.addEventListener('alpine:init', () => {
             'unit_price' => (float) $i->unit_price,
             'discount' => (float) $i->discount,
         ])->values()->toJson() !!},
+        paidAmount: {{ (float) $sale->paid_amount }},
+        additionalDiscount: {{ (float) $sale->total_discount }},
+
+        get paidAmountDisplay() {
+            return this.paidAmount > 0 ? this.fmtNum(this.paidAmount) : '0';
+        },
+        set paidAmountDisplay(val) {},
+        get additionalDiscountDisplay() {
+            return this.additionalDiscount > 0 ? this.fmtNum(this.additionalDiscount) : '0';
+        },
+        set additionalDiscountDisplay(val) {},
 
         subtotal() {
             return this.items.reduce((s, it) => s + it.quantity * it.unit_price, 0);
@@ -138,7 +159,10 @@ document.addEventListener('alpine:init', () => {
             return this.items.reduce((s, it) => s + (it.discount || 0), 0);
         },
         grandTotal() {
-            return Math.max(0, this.subtotal() - this.discountTotal());
+            return Math.max(0, this.subtotal() - this.discountTotal() - this.additionalDiscount);
+        },
+        changeAmount() {
+            return Math.max(0, this.paidAmount - this.grandTotal());
         },
         lineTotal(it) {
             return Math.max(0, it.quantity * it.unit_price - (it.discount || 0));
@@ -188,6 +212,7 @@ document.addEventListener('alpine:init', () => {
             }
             let form = e.target;
             form.querySelectorAll('input[name^="items["]').forEach(el => el.remove());
+            form.querySelectorAll('input[name="paid_amount"], input[name="total_discount"]').forEach(el => el.remove());
             this.items.forEach((it, idx) => {
                 form.insertAdjacentHTML('beforeend',
                     `<input type="hidden" name="items[${idx}][id]" value="${it.id}">` +
@@ -195,6 +220,8 @@ document.addEventListener('alpine:init', () => {
                     `<input type="hidden" name="items[${idx}][unit_price]" value="${it.unit_price}">` +
                     `<input type="hidden" name="items[${idx}][discount]" value="${it.discount || 0}">`);
             });
+            form.insertAdjacentHTML('beforeend', `<input type="hidden" name="paid_amount" value="${this.paidAmount}">`);
+            form.insertAdjacentHTML('beforeend', `<input type="hidden" name="total_discount" value="${this.additionalDiscount}">`);
             form.submit();
         }
     }));

@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class TelegramErrorReporter
@@ -23,16 +23,48 @@ class TelegramErrorReporter
             return;
         }
 
+        Log::info('TelegramErrorReporter: mengirim error ke Telegram.', [
+            'class' => get_class($e),
+        ]);
+
         try {
             $message = $this->formatMessage($e);
+            $message = mb_substr($message, 0, 4096);
 
-            Http::timeout(10)
-                ->post("https://api.telegram.org/bot{$this->botToken}/sendMessage", [
-                    'chat_id' => $this->chatId,
-                    'text' => $message,
-                    'parse_mode' => 'HTML',
-                ]);
-        } catch (Throwable) {
+            $url = "https://api.telegram.org/bot{$this->botToken}/sendMessage";
+            $postData = http_build_query([
+                'chat_id' => $this->chatId,
+                'text' => $message,
+                'parse_mode' => 'HTML',
+            ]);
+
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'POST',
+                    'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
+                    'content' => $postData,
+                    'timeout' => 10,
+                    'ignore_errors' => true,
+                ],
+            ]);
+
+            $response = @file_get_contents($url, false, $context);
+
+            if ($response === false) {
+                Log::error('TelegramErrorReporter: gagal koneksi ke Telegram API (file_get_contents).');
+            } else {
+                $result = json_decode($response, true);
+                if (! ($result['ok'] ?? false)) {
+                    Log::error('TelegramErrorReporter: Telegram API menolak.', [
+                        'description' => $result['description'] ?? 'unknown',
+                        'error_code' => $result['error_code'] ?? null,
+                    ]);
+                }
+            }
+        } catch (Throwable $ex) {
+            Log::error('TelegramErrorReporter: exception saat kirim.', [
+                'error' => $ex->getMessage(),
+            ]);
         }
     }
 
@@ -47,10 +79,10 @@ class TelegramErrorReporter
         $time = now()->format('d/m/Y H:i:s');
 
         $msg = "<b>ERROR {$appName} [{$env}]</b>\n\n"
-            ."<b>Time:</b> {$time}\n";
+            ."<b>Waktu:</b> {$time}\n";
 
         if (app()->runningInConsole()) {
-            $msg .= "<b>Context:</b> CLI\n";
+            $msg .= "<b>Konteks:</b> CLI\n";
         } else {
             $url = request()->fullUrl();
             $method = request()->method();
@@ -61,11 +93,11 @@ class TelegramErrorReporter
 
             $msg .= "<b>User:</b> {$user}\n"
                 ."<b>IP:</b> {$ip}\n"
-                ."<b>URL:</b> {$method} {$url}\n";
+                ."<b>Halaman:</b> {$method} {$url}\n";
         }
 
         $msg .= "\n<b>Exception:</b> <code>{$class}</code>\n"
-            ."<b>Message:</b> {$message}\n"
+            ."<b>Pesan:</b> {$message}\n"
             ."<b>File:</b> <code>{$file}:{$line}</code>";
 
         return $msg;

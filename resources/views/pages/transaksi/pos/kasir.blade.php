@@ -573,6 +573,27 @@ function posKasir() {
 
         handleCheckout() {
             if (this.cart.length === 0 || this.loading) return;
+
+            let pmEl = document.getElementById('paymentMethod');
+            let code = pmEl?.options[pmEl.selectedIndex]?.dataset?.code || '';
+            let isCashOrTransfer = code === 'CASH' || code === 'TRANSFER';
+            if (isCashOrTransfer) {
+                let paidEl = document.getElementById('paidAmount');
+                let paid = paidEl ? parseInt(paidEl.value.replace(/\D/g, ''), 10) || 0 : 0;
+                let cartTotalEl = document.getElementById('cartTotal');
+                let totalText = cartTotalEl ? cartTotalEl.textContent.replace(/[^\d,-]/g, '').replace(/\./g, '').replace(',', '.') : '0';
+                let total = parseFloat(totalText) || 0;
+                if (paid < total) {
+                    showToast('Jumlah pembayaran wajib diisi minimal sebesar total belanja', 'error');
+                    return;
+                }
+            }
+
+            if (code === 'CREDIT' && !this.selectedCust) {
+                showToast('Pilih customer terlebih dahulu untuk pembayaran kredit', 'error');
+                return;
+            }
+
             this.loading = true;
             let form = document.getElementById('posForm');
             if (!form) { this.loading = false; return; }
@@ -594,12 +615,17 @@ function posKasir() {
                 headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
                 body: fd,
             })
-            .then(r => r.json().then(data => ({ ok: r.ok, data })))
-            .then(({ ok, data }) => {
+            .then(r => r.text().then(text => {
+                let data;
+                try { data = JSON.parse(text); } catch (e) { data = null; }
+                return { ok: r.ok, status: r.status, data, text };
+            }))
+            .then(({ ok, status, data, text }) => {
                 if (ok) {
-                    showToast(data.message || 'Transaksi berhasil', 'success');
+                    showToast(data?.message || 'Transaksi berhasil', 'success');
+                    self.selectedCust = null;
                     self.clearCart();
-                    if (data.sale_id && self.printerType !== 'none') {
+                    if (data?.sale_id && self.printerType !== 'none') {
                         let printUrl;
                         if (self.printerType === 'thermal') {
                             printUrl = '{{ url('pos/print-thermal') }}/' + data.sale_id + '?preview=1';
@@ -613,10 +639,17 @@ function posKasir() {
                         self.printPreviewModal = true;
                     }
                 } else {
-                    showToast(data.message || Object.values(data.errors || {}).flat().join('<br>') || 'Gagal', 'error');
+                    if (data) {
+                        showToast(data.message || Object.values(data.errors || {}).flat().join('<br>') || 'Gagal', 'error');
+                    } else {
+                        showToast('Error ' + status + ': Gagal memproses transaksi.', 'error');
+                    }
                 }
             })
-            .catch(() => showToast('Gagal memproses transaksi', 'error'))
+            .catch((err) => {
+                console.error('Checkout error:', err);
+                showToast('Gagal memproses transaksi. Cek koneksi atau hubungi admin.', 'error');
+            })
             .finally(() => { self.loading = false; });
         },
 

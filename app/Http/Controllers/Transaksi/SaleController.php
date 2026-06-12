@@ -446,6 +446,8 @@ class SaleController extends Controller
             'status' => 'required|in:paid,partial,unpaid,cancelled',
             'due_date' => 'nullable|date',
             'sale_date' => 'nullable|date',
+            'paid_amount' => 'nullable|numeric|min:0',
+            'total_discount' => 'nullable|numeric|min:0',
             'items' => 'required|array|min:1',
             'items.*.id' => 'required|exists:sale_items,id',
             'items.*.quantity' => 'required|numeric|min:0.01',
@@ -527,16 +529,21 @@ class SaleController extends Controller
                 $taxRate = Tax::find($sale->tax_id)?->rate ?? 0;
                 $tax = round(($subtotal - $itemDiscount) * $taxRate / 100);
             }
-            $totalDiscount = $sale->total_discount;
+            $totalDiscount = $validated['total_discount'] ?? $sale->total_discount;
             $total = max(0, $subtotal + $tax - $totalDiscount - $itemDiscount);
+            $paidAmount = $validated['paid_amount'] ?? $sale->paid_amount;
+            $change = max(0, $paidAmount - $total);
 
             // 7. Update sale
             $sale->update([
                 'status' => $validated['status'],
                 'subtotal' => $subtotal,
                 'item_discount' => $itemDiscount,
+                'total_discount' => $totalDiscount,
                 'tax' => $tax,
                 'total' => $total,
+                'paid_amount' => $paidAmount,
+                'change_amount' => $change,
                 'due_date' => $validated['due_date'] ?? $sale->due_date,
                 'sale_date' => $validated['sale_date'] ?? $sale->sale_date,
             ]);

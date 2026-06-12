@@ -133,7 +133,7 @@
     
 </div>
 <div>
-                <label class="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Bayar (Rp)</label>
+                <label class="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Jumlah Bayar (Rp)</label>
                 <input type="text" name="paid_amount" id="paidAmount" class="form-input text-xs font-mono py-1.5" value="0" inputmode="numeric"
                        @input="updateChange()"
                        @focus="$el.value = $el.value.replace(/\D/g, '')"
