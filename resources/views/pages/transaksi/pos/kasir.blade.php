@@ -631,7 +631,7 @@ function posKasir() {
                             <div class="flex items-center gap-2">
                                 <span class="font-bold text-sm">${s.total}</span>
                                 <span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium ${s.status === 'paid' ? 'bg-emerald-50 text-emerald-600' : s.status === 'partial' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}">${s.status === 'paid' ? 'Lunas' : s.status === 'partial' ? 'Sebagian' : 'Belum'}</span>
-                                <a href="${s.print_a4}" target="_blank" class="btn btn-sm p-1 w-7 h-7 flex items-center justify-center" title="Cetak A4"><i class="bi bi-printer text-xs"></i></a>
+                                <button type="button" onclick="printHistoryReceipt('${s.print_epson}', '${s.print_thermal}', '${s.print_a4}')" class="btn btn-sm p-1 w-7 h-7 flex items-center justify-center" title="Cetak"><i class="bi bi-printer text-xs"></i></button>
                             </div>
                         </div>
                     `).join('');
@@ -652,6 +652,30 @@ document.addEventListener('DOMContentLoaded', function() {
         setInterval(updateDateTime, 30000);
     }
 });
+
+function printHistoryReceipt(epsonUrl, thermalUrl, a4Url) {
+    let printerType = localStorage.getItem('posPrinter') || 'epson';
+    let url;
+    if (printerType === 'thermal') {
+        url = thermalUrl;
+    } else if (printerType === 'epson') {
+        url = epsonUrl;
+    } else {
+        url = a4Url;
+    }
+    let iframe = document.getElementById('history-print-iframe');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'history-print-iframe';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+    }
+    iframe.onload = function() {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+    };
+    iframe.src = url;
+}
 </script>
 @endpush
 @endsection

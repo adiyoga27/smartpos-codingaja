@@ -95,15 +95,13 @@
                 <div>
                     <label class="text-[10px] text-slate-400">Tgl Mulai</label>
                     <div class="relative">
-                        <i class="bi bi-calendar3 absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
-                        <input type="date" x-model="creditStartDate" class="form-input text-xs py-1.5 pl-7" value="{{ now()->format('Y-m-d') }}">
+                        <input type="date" x-model="creditStartDate" class="form-input text-xs py-1.5" value="{{ now()->format('Y-m-d') }}">
                     </div>
                 </div>
                 <div>
                     <label class="text-[10px] text-slate-400">Tgl Jatuh Tempo</label>
                     <div class="relative">
-                        <i class="bi bi-calendar3 absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
-                        <input type="date" x-model="creditDueDate" class="form-input text-xs py-1.5 pl-7">
+                        <input type="date" x-model="creditDueDate" class="form-input text-xs py-1.5">
                     </div>
                 </div>
             </div>
@@ -163,7 +161,7 @@
             <input type="hidden" name="total_discount" id="totalAddDisc" value="0">
         </div>
     </div>
-    
+    </div>
 
     <div class="border-t border-slate-200 bg-white p-3 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20 relative">
         <div class="flex justify-between items-center mb-1">
