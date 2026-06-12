@@ -123,10 +123,7 @@
                 <br>
                 <div>Tanggal : {{ $sale->sale_date->format('d-m-Y') }}</div>
                 <div>Metode  : {{ $sale->paymentMethod?->name ?? '-' }}</div>
-                @if($sale->paymentMethod?->is_credit && $sale->due_date)
-                <div>Tgl Mulai : {{ $sale->sale_date->format('d-m-Y') }}</div>
-                <div>Tgl Tempo : {{ \Carbon\Carbon::parse($sale->due_date)->format('d-m-Y') }}</div>
-                @endif
+
                 <div>Kasir   : {{ $sale->creator->name ?? 'KASIR 1' }}</div>
                 <div>No.     : {{ $sale->invoice_number }}</div>
             </div>
@@ -137,6 +134,10 @@
                 <div>{{ strtoupper($sale->customer?->name ?? $sale->customer_name ?? 'UMUM') }}</div>
                 @if($sale->customer?->city)
                 <div>{{ strtoupper($sale->customer->city) }}</div>
+                @endif
+                @if($sale->paymentMethod?->is_credit && $sale->due_date)
+                <div>Tgl Mulai : {{ $sale->sale_date->format('d-m-Y') }}</div>
+                <div>Tgl Tempo : {{ \Carbon\Carbon::parse($sale->due_date)->format('d-m-Y') }}</div>
                 @endif
             </div>
         </div>
