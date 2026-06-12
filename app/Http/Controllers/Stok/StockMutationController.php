@@ -186,11 +186,12 @@ class StockMutationController extends Controller
         $opnameNumber = 'OPN-'.now()->format('Ymd').'-'.str_pad((string) ($count + 1), 4, '0', STR_PAD_LEFT);
 
         DB::transaction(function () use ($items, $opnameNumber) {
-            foreach ($items as $productId => $physicalQty) {
+            foreach ($items as $productId => $data) {
                 $product = Product::find($productId);
                 if (! $product) {
                     continue;
                 }
+                $physicalQty = (float) ($data['qty'] ?? $data);
                 $difference = $physicalQty - $product->stock;
                 if ($difference == 0) {
                     continue;
@@ -198,13 +199,15 @@ class StockMutationController extends Controller
                 $oldStock = $product->stock;
                 $product->stock = $physicalQty;
                 $product->save();
+                $note = $data['notes'] ?? 'Stock opname adjustment';
+
                 StockMutation::create([
                     'product_id' => $product->id,
                     'type' => 'opname',
                     'quantity' => abs($difference),
                     'stock_before' => $oldStock,
                     'stock_after' => $product->stock,
-                    'notes' => 'Stock opname adjustment',
+                    'notes' => $note,
                     'opname_number' => $opnameNumber,
                     'created_by' => auth()->id(),
                 ]);

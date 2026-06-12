@@ -22,6 +22,7 @@
                         <th>Stok Sebelum</th>
                         <th>Stok Setelah</th>
                         <th>Selisih</th>
+                        <th>Catatan</th>
                         <th>User</th>
                         <th>Tanggal</th>
                     </tr>
@@ -44,6 +45,7 @@
                             <span class="text-slate-400">0</span>
                             @endif
                         </td>
+                        <td class="text-xs text-slate-500 max-w-[200px] truncate" title="{{ $m->notes }}">{{ $m->notes }}</td>
                         <td>{{ $m->creator?->name ?? '-' }}</td>
                         <td>{{ $m->created_at->format('d/m/Y H:i') }}</td>
                     </tr>

@@ -27,7 +27,14 @@
             <div class="overflow-x-auto max-h-[60vh] overflow-y-auto">
                 <table class="table border border-slate-200" id="opnameTable">
                     <thead class="sticky top-0 bg-slate-50 z-10">
-                        <tr><th>Produk</th><th>Kode</th><th>Stok Sistem</th><th>Stok Fisik</th><th>Selisih</th></tr>
+                        <tr>
+                            <th>Produk</th>
+                            <th>Kode</th>
+                            <th>Stok Sistem</th>
+                            <th>Stok Fisik</th>
+                            <th>Selisih</th>
+                            <th>Catatan</th>
+                        </tr>
                     </thead>
                     <tbody>
                         @foreach($products as $product)
@@ -35,8 +42,9 @@
                             <td>{{ $product->name }}</td>
                             <td>{{ $product->code }}</td>
                             <td class="system-stock" data-idx="{{ $loop->index }}">{{ formatQty($product->stock) }}</td>
-                            <td><input type="number" name="items[{{ $product->id }}]" class="form-input physical-stock" data-idx="{{ $loop->index }}" value="{{ $product->stock }}" step="0.01"></td>
+                            <td><input type="number" name="items[{{ $product->id }}][qty]" class="form-input physical-stock" data-idx="{{ $loop->index }}" value="{{ $product->stock }}" step="0.01"></td>
                             <td class="diff text-right" data-idx="{{ $loop->index }}">0</td>
+                            <td><input type="text" name="items[{{ $product->id }}][notes]" class="form-input form-input-sm" placeholder="Alasan selisih..."></td>
                         </tr>
                         @endforeach
                     </tbody>
