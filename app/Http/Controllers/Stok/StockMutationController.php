@@ -152,18 +152,27 @@ class StockMutationController extends Controller
         return view('pages.stok.opname_detail', compact('mutations', 'opnameNumber'));
     }
 
+    public function opnameIndex()
+    {
+        return view('pages.stok.opname');
+    }
+
     public function opnameSelect()
     {
-        $products = Product::active()->get();
+        $products = Product::active()->orderBy('name')->get();
 
         return view('pages.stok.opname_select', compact('products'));
     }
 
     public function opnameForm(Request $request)
     {
-        $products = Product::active()->orderBy('name')->get();
+        $productIds = $request->input('product_ids', []);
+        if (empty($productIds)) {
+            return redirect()->route('stok.opname.select')->with('error', 'Pilih minimal 1 produk.');
+        }
+        $products = Product::active()->whereIn('id', $productIds)->orderBy('name')->get();
 
-        return view('pages.stok.opname', compact('products'));
+        return view('pages.stok.opname_form', compact('products'));
     }
 
     public function opnameStore(Request $request)
@@ -202,6 +211,6 @@ class StockMutationController extends Controller
             }
         });
 
-        return redirect()->route('stok.opname.history')->with('success', 'Stock opname berhasil disimpan.');
+        return redirect()->route('stok.opname')->with('success', 'Stock opname '.$opnameNumber.' berhasil disimpan.');
     }
 }

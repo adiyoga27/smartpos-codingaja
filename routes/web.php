@@ -118,7 +118,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('opname/history', [StockMutationController::class, 'opnameHistory'])->name('opname.history');
         Route::get('opname/detail/{opnameNumber}', [StockMutationController::class, 'opnameDetail'])->name('opname.detail');
         Route::get('opname/select', [StockMutationController::class, 'opnameSelect'])->name('opname.select');
-        Route::get('opname', [StockMutationController::class, 'opnameForm'])->name('opname');
+        Route::get('opname/form', [StockMutationController::class, 'opnameForm'])->name('opname.form');
+        Route::get('opname', [StockMutationController::class, 'opnameIndex'])->name('opname');
         Route::post('opname', [StockMutationController::class, 'opnameStore'])->name('opname.store');
     });
 
