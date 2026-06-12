@@ -109,9 +109,10 @@
         </div>
     </div>
 
-    <div class="flex gap-2">
-        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Simpan Perubahan</button>
-        <a href="{{ route('pos.detail', $sale) }}" class="btn btn-secondary">Batal</a>
+    <div class="mt-6">
+        <button type="submit" class="btn btn-primary btn-md"><i class="bi bi-check-lg mr-1"></i>Simpan Perubahan</button>
+        <a href="{{ route('pos.detail', $sale) }}" class="btn btn-secondary btn-md">Batal</a>
+    </div>
     </div>
 </form>
 </div>

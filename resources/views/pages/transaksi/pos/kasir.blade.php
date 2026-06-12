@@ -260,15 +260,20 @@ function posKasir() {
             let pmEl = document.getElementById('paymentMethod');
             if (pmEl) {
                 pmEl.addEventListener('change', function() {
-                    let isCredit = this.options[this.selectedIndex].dataset.credit === '1';
-                    if (accountPanel) accountPanel.style.display = isCredit ? 'none' : '';
-                    if (tempoPanel) tempoPanel.style.display = isCredit ? '' : 'none';
-                    if (tempoPanel) tempoPanel.style.display = isCredit ? '' : 'none';
-                    if (isCredit) {
-                        self.btnPayLabel = 'Proses Kredit';
-                    } else {
-                        self.btnPayLabel = 'Bayar';
+                    let opt = this.options[this.selectedIndex];
+                    let isCredit = opt.dataset.credit === '1';
+                    let code = opt.dataset.code || '';
+                    let isTransfer = code === 'TRANSFER';
+                    if (accountPanel) {
+                        accountPanel.style.display = isTransfer ? '' : 'none';
+                        if (!isTransfer) {
+                            let cashSelect = accountPanel.querySelector('select[name="cash_account_id"]');
+                            let defaultOpt = cashSelect ? cashSelect.querySelector('option[selected]') : null;
+                            if (cashSelect && defaultOpt) cashSelect.value = defaultOpt.value;
+                        }
                     }
+                    if (tempoPanel) tempoPanel.style.display = isCredit ? '' : 'none';
+                    self.btnPayLabel = isCredit ? 'Proses Kredit' : 'Bayar';
                 });
                 pmEl.dispatchEvent(new Event('change'));
             }

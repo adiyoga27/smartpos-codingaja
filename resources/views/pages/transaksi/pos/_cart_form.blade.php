@@ -57,7 +57,7 @@
                 <label class="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Pembayaran</label>
                 <select name="payment_method_id" class="form-select text-xs py-1.5" id="paymentMethod" required>
                     @foreach($paymentMethods as $pm)
-                    <option value="{{ $pm->id }}" data-credit="{{ $pm->is_credit ? '1' : '0' }}">{{ $pm->name }}</option>
+                    <option value="{{ $pm->id }}" data-credit="{{ $pm->is_credit ? '1' : '0' }}" data-code="{{ $pm->code }}">{{ $pm->name }}</option>
                     @endforeach
                 </select>
             </div>
