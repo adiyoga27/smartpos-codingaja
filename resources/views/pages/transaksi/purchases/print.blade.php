@@ -2,113 +2,188 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>PO {{ $purchase->document_number }}</title>
+    <title>Faktur Pembelian {{ $purchase->document_number }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, Helvetica, sans-serif; padding: 30px; color: #1a1a1a; }
-        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #d97706; padding-bottom: 15px; margin-bottom: 20px; }
-        .header h1 { font-size: 22px; color: #d97706; }
-        .header .company { font-size: 12px; color: #666; }
-        .header .doc { text-align: right; font-size: 12px; }
-        .header .doc h2 { font-size: 18px; color: #d97706; }
-        .info { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 13px; }
-        .info div { line-height: 1.8; }
-        .info strong { color: #555; }
-        .status { display: inline-block; padding: 2px 10px; border-radius: 4px; font-weight: bold; font-size: 11px; }
-        .status.draft { background: #e2e8f0; color: #475569; }
-        .status.partial { background: #fef3c7; color: #92400e; }
-        .status.completed { background: #d1fae5; color: #065f46; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        thead th { background: #f8fafc; border-bottom: 2px solid #e2e8f0; padding: 10px 8px; font-size: 11px; text-transform: uppercase; text-align: left; }
-        tbody td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+        body { 
+            font-family: 'Courier New', Courier, monospace; 
+            padding: 20px; 
+            width: 9.5in; 
+            font-size: 14px; 
+            color: #000; 
+            background: #fff;
+            margin: auto;
+        }
+        .container {
+            width: 100%;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .header-left, .header-right {
+            width: 50%;
+        }
+        .header-right {
+            text-align: right;
+            padding-right: 20px;
+        }
+        .title {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-bottom: 10px;
+            table-layout: fixed;
+        }
+        thead {
+            border-top: 1px dashed #000;
+            border-bottom: 1px dashed #000;
+        }
+        tbody {
+            border-bottom: 1px dashed #000;
+        }
+        th, td { 
+            padding: 4px 0; 
+            vertical-align: top;
+            font-weight: normal;
+        }
+        th {
+            text-align: left;
+        }
+        .col-no { width: 5%; }
+        .col-name { width: 40%; }
+        .col-qty { width: 12%; }
+        .col-price { width: 15%; text-align: right; }
+        .col-disc { width: 10%; text-align: right; }
+        .col-total { width: 18%; text-align: right; }
+        
         .text-right { text-align: right; }
         .text-center { text-align: center; }
-        .totals { width: 320px; margin-left: auto; font-size: 13px; }
-        .totals .row { display: flex; justify-content: space-between; padding: 5px 0; }
-        .totals .row.total { border-top: 2px solid #1a1a1a; padding-top: 8px; margin-top: 5px; font-size: 16px; font-weight: bold; }
-        .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 15px; }
-        .note { font-size: 12px; color: #888; margin-top: 10px; }
+        
+        .footer-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-top: 10px;
+        }
+        .terbilang-box {
+            width: 70%;
+        }
+        .terbilang-text {
+            margin-bottom: 15px;
+        }
+        .total-box {
+            width: 30%;
+            text-align: right;
+        }
+        .signature-area {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+        }
+        .signature-box {
+            width: 33%;
+            text-align: center;
+        }
+        .btn-print { 
+            margin-top: 30px; 
+            padding: 8px 16px; 
+            background: #2563eb; 
+            color: #fff; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            display: block; 
+        }
         @media print {
-            body { padding: 10px; }
-            @page { size: A4; margin: 10mm; }
+            body { 
+                width: 100%; 
+                padding: 0;
+            }
+            .btn-print { display: none; }
+            @page { 
+                size: 9.5in 11in; 
+                margin: 0.5in; 
+            }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="company">
-            <h1>{{ $company->name ?? config('app.name') }}</h1>
-            <p>{{ $company->address ?? '' }}</p>
-            <p>{{ $company->phone ?? '' }}</p>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <div>{{ $company->name ?? 'HA()' }}</div>
+                <div>{{ $company->address ?? 'Jl. Tumpang Sari Cakranegara' }}</div>
+                <br>
+                <div>Tanggal : {{ $purchase->purchase_date->format('d-m-Y') }}, Tgl Tempo : {{ $purchase->due_date ? \Carbon\Carbon::parse($purchase->due_date)->format('d-m-Y') : $purchase->purchase_date->format('d-m-Y') }}</div>
+                <div>Pembuat : {{ $purchase->creator->name ?? 'ADMIN' }}</div>
+                <div>No.     : {{ $purchase->document_number }}</div>
+            </div>
+            <div class="header-right">
+                <div class="title">FAKTUR PEMBELIAN</div>
+                <br>
+                <div>Kepada Yth.</div>
+                <div>{{ strtoupper($purchase->supplier?->name ?? 'UMUM') }}</div>
+            </div>
         </div>
-        <div class="doc">
-            <h2>PURCHASE ORDER</h2>
-            <p>{{ $purchase->document_number }}</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-no">No.</th>
+                    <th class="col-name">: Kode/Nama Produk</th>
+                    <th class="col-qty">: QTY</th>
+                    <th class="col-price">: HARGA</th>
+                    <th class="col-disc">: DISKON</th>
+                    <th class="col-total">: JUMLAH</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($purchase->items as $index => $item)
+                <tr>
+                    <td>{{ $index + 1 }}</td>
+                    <td>: {{ strtoupper($item->product?->name ?? '-') }}</td>
+                    <td>: {{ formatQty($item->quantity) }} PCS</td>
+                    <td class="text-right">: &nbsp;&nbsp;&nbsp;{{ number_format($item->unit_price, 0, ',', '.') }}</td>
+                    <td class="text-right">: &nbsp;&nbsp;&nbsp;{{ $item->discount > 0 ? number_format($item->discount, 0, ',', '.') : '' }}</td>
+                    <td class="text-right">: &nbsp;&nbsp;&nbsp;{{ number_format($item->total, 0, ',', '.') }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        <div class="footer-container">
+            <div class="terbilang-box">
+                <div class="terbilang-text">{{ trim(terbilang($purchase->total)) }} rupiah</div>
+                <div>Terima kasih</div>
+                @if($purchase->notes)
+                <div>CATATAN: {{ strtoupper($purchase->notes) }}</div>
+                @endif
+                <div class="signature-area">
+                    <div class="signature-box">Penerima,</div>
+                    <div class="signature-box">Gudang,</div>
+                    <div class="signature-box">Hormat Kami,</div>
+                </div>
+            </div>
+            <div class="total-box">
+                Subtotal Rp. &nbsp;&nbsp;&nbsp; {{ number_format($purchase->subtotal, 0, ',', '.') }}<br>
+                @if($purchase->discount > 0)
+                Diskon Rp. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {{ number_format($purchase->discount, 0, ',', '.') }}<br>
+                @endif
+                @if($purchase->tax > 0)
+                Pajak Rp. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {{ number_format($purchase->tax, 0, ',', '.') }}<br>
+                @endif
+                Jumlah Rp. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {{ number_format($purchase->total, 0, ',', '.') }}
+            </div>
         </div>
-    </div>
 
-    <div class="info">
-        <div>
-            <strong>Supplier:</strong> {{ $purchase->supplier?->name ?? '-' }}<br>
-            <strong>Tanggal:</strong> {{ $purchase->purchase_date->isoFormat('dddd, D MMMM Y') }}<br>
-            @if($purchase->due_date)
-            <strong>Jatuh Tempo:</strong> {{ $purchase->due_date->isoFormat('D MMMM Y') }}<br>
-            @endif
-        </div>
-        <div>
-            <strong>Status:</strong>
-            <span class="status {{ $purchase->status }}">{{ strtoupper($purchase->status) }}</span><br>
-            @if($purchase->creator)
-            <strong>Dibuat Oleh:</strong> {{ $purchase->creator?->name }}<br>
-            @endif
-        </div>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Produk</th>
-                <th class="text-center">Qty</th>
-                <th class="text-center">Diterima</th>
-                <th class="text-right">Harga</th>
-                <th class="text-right">Diskon</th>
-                <th class="text-right">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($purchase->items as $i => $item)
-            <tr>
-                <td>{{ $i + 1 }}</td>
-                <td>{{ $item->product?->name ?? '-' }}</td>
-                <td class="text-center">{{ formatQty($item->quantity) }}</td>
-                <td class="text-center">{{ formatQty($item->received_quantity) }}</td>
-                <td class="text-right">{{ number_format($item->unit_price, 0, ',', '.') }}</td>
-                <td class="text-right">{{ number_format($item->discount, 0, ',', '.') }}</td>
-                <td class="text-right">{{ number_format($item->total, 0, ',', '.') }}</td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    <div class="totals">
-        <div class="row"><span>Subtotal</span><span>{{ formatRupiah($purchase->subtotal) }}</span></div>
-        @if($purchase->discount > 0)
-        <div class="row"><span>Diskon</span><span>-{{ formatRupiah($purchase->discount) }}</span></div>
-        @endif
-        @if($purchase->tax > 0)
-        <div class="row"><span>PPN</span><span>{{ formatRupiah($purchase->tax) }}</span></div>
-        @endif
-        <div class="row total"><span>TOTAL</span><span>{{ formatRupiah($purchase->total) }}</span></div>
-    </div>
-
-    @if($purchase->notes)
-    <div class="note"><strong>Catatan:</strong> {{ $purchase->notes }}</div>
-    @endif
-
-    <div class="footer">
-        <p>{{ $company->name ?? config('app.name') }}</p>
-        <button onclick="window.print()" style="margin-top:10px;padding:8px 20px;background:#d97706;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;">Cetak</button>
+        <button class="btn-print" onclick="window.print()">Cetak</button>
     </div>
 </body>
 </html>
