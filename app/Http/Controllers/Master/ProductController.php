@@ -89,6 +89,9 @@ class ProductController extends Controller
         $request->merge([
             'purchase_unit' => $request->input('purchase_unit', $request->input('unit', 'PCS')),
             'conversion_factor' => $request->input('conversion_factor', 1),
+            'purchase_price' => $this->cleanRupiah($request->input('purchase_price')),
+            'selling_price' => $this->cleanRupiah($request->input('selling_price')),
+            'wholesale_price' => $this->cleanRupiah($request->input('wholesale_price')),
         ]);
 
         $validated = $request->validate([
@@ -131,6 +134,9 @@ class ProductController extends Controller
         $request->merge([
             'purchase_unit' => $request->input('purchase_unit', $request->input('unit', $product->purchase_unit ?? 'PCS')),
             'conversion_factor' => $request->input('conversion_factor', $product->conversion_factor ?? 1),
+            'purchase_price' => $this->cleanRupiah($request->input('purchase_price')),
+            'selling_price' => $this->cleanRupiah($request->input('selling_price')),
+            'wholesale_price' => $this->cleanRupiah($request->input('wholesale_price')),
         ]);
 
         $validated = $request->validate([
@@ -161,6 +167,15 @@ class ProductController extends Controller
         $product->update($validated);
 
         return redirect()->route('master.products.index')->with('success', 'Produk berhasil diperbarui.');
+    }
+
+    private function cleanRupiah($value): string
+    {
+        if (is_null($value) || $value === '') {
+            return '0';
+        }
+
+        return (string) preg_replace('/[^\d]/', '', $value);
     }
 
     public function destroy(Product $product)

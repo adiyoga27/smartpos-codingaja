@@ -14,7 +14,8 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label class="form-label">Kode</label>
-                    <input type="text" name="code" class="form-input" value="{{ old('code', $product->code) }}" required>
+                    <input type="text" name="code" class="form-input @error('code') is-invalid @enderror" value="{{ old('code', $product->code) }}" required>
+                    @error('code')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div>
                     <label class="form-label">Barcode</label>
@@ -22,7 +23,8 @@
                 </div>
                 <div>
                     <label class="form-label">Nama</label>
-                    <input type="text" name="name" class="form-input" value="{{ old('name', $product->name) }}" required>
+                    <input type="text" name="name" class="form-input @error('name') is-invalid @enderror" value="{{ old('name', $product->name) }}" required>
+                    @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div>
                     <label class="form-label">Kategori</label>
@@ -34,27 +36,33 @@
                 </div>
                 <div>
                     <label class="form-label">Satuan</label>
-                    <input type="text" name="unit" class="form-input" value="{{ old('unit', $product->unit) }}" required>
+                    <input type="text" name="unit" class="form-input @error('unit') is-invalid @enderror" value="{{ old('unit', $product->unit) }}" required>
+                    @error('unit')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div>
                     <label class="form-label">Harga Beli (Rp)</label>
-                    <input type="text" name="purchase_price" class="form-input rupiah-input" value="{{ old('purchase_price', $product->purchase_price) }}" required>
+                    <input type="text" name="purchase_price" class="form-input rupiah-input @error('purchase_price') is-invalid @enderror" value="{{ old('purchase_price', $product->purchase_price) }}" required>
+                    @error('purchase_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div>
                     <label class="form-label">Harga Toko (Rp)</label>
-                    <input type="text" name="selling_price" class="form-input rupiah-input" value="{{ old('selling_price', $product->selling_price) }}" required>
+                    <input type="text" name="selling_price" class="form-input rupiah-input @error('selling_price') is-invalid @enderror" value="{{ old('selling_price', $product->selling_price) }}" required>
+                    @error('selling_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div>
                     <label class="form-label">Harga Reseller (Rp)</label>
-                    <input type="text" name="wholesale_price" class="form-input rupiah-input" value="{{ old('wholesale_price', $product->wholesale_price) }}">
+                    <input type="text" name="wholesale_price" class="form-input rupiah-input @error('wholesale_price') is-invalid @enderror" value="{{ old('wholesale_price', $product->wholesale_price) }}">
+                    @error('wholesale_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div>
                     <label class="form-label">Stok</label>
-                    <input type="number" name="stock" class="form-input" value="{{ old('stock', $product->stock) }}" min="0" step="1" required>
+                    <input type="number" name="stock" class="form-input @error('stock') is-invalid @enderror" value="{{ old('stock', $product->stock) }}" min="0" step="1" required>
+                    @error('stock')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div>
                     <label class="form-label">Stok Minimum</label>
-                    <input type="number" name="min_stock" class="form-input" value="{{ old('min_stock', $product->min_stock) }}" min="0" step="1" required>
+                    <input type="number" name="min_stock" class="form-input @error('min_stock') is-invalid @enderror" value="{{ old('min_stock', $product->min_stock) }}" min="0" step="1" required>
+                    @error('min_stock')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div>
                     <label class="form-label">Stok Maksimum</label>
@@ -63,6 +71,7 @@
                 <div>
                     <label class="form-label">Foto</label>
                     <input type="file" name="photo" class="form-input" accept="image/*">
+                    @error('photo')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     @if($product->photo)
                         <div class="mt-2"><img src="{{ asset('storage/'.$product->photo) }}" class="rounded-lg border border-slate-200" style="height:80px;"></div>
                     @endif
