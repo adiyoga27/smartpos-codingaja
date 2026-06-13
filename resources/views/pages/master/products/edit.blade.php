@@ -41,17 +41,17 @@
                 </div>
                 <div>
                     <label class="form-label">Harga Beli (Rp)</label>
-                    <input type="text" name="purchase_price" class="form-input rupiah-input @error('purchase_price') is-invalid @enderror" value="{{ old('purchase_price', $product->purchase_price) }}" required>
+                    <input type="text" name="purchase_price" class="form-input rupiah-input @error('purchase_price') is-invalid @enderror" value="{{ old('purchase_price', (int) $product->purchase_price) }}" required>
                     @error('purchase_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div>
                     <label class="form-label">Harga Toko (Rp)</label>
-                    <input type="text" name="selling_price" class="form-input rupiah-input @error('selling_price') is-invalid @enderror" value="{{ old('selling_price', $product->selling_price) }}" required>
+                    <input type="text" name="selling_price" class="form-input rupiah-input @error('selling_price') is-invalid @enderror" value="{{ old('selling_price', (int) $product->selling_price) }}" required>
                     @error('selling_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div>
                     <label class="form-label">Harga Reseller (Rp)</label>
-                    <input type="text" name="wholesale_price" class="form-input rupiah-input @error('wholesale_price') is-invalid @enderror" value="{{ old('wholesale_price', $product->wholesale_price) }}">
+                    <input type="text" name="wholesale_price" class="form-input rupiah-input @error('wholesale_price') is-invalid @enderror" value="{{ old('wholesale_price', (int) $product->wholesale_price) }}">
                     @error('wholesale_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div>
